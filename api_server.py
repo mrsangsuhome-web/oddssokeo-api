@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+
 import threading
 import time
 import random
@@ -7,387 +8,567 @@ import os
 import jwt
 import datetime
 
-app = Flask(__name__)
+app = Flask(**name**)
 
 CORS(app)
 
-SECRET_KEY = "oddssokeo_vip_secret"
+SECRET_KEY = "sports_intelligence_secret"
 
-steam_data = []
+matches_data = []
 
-steam_alerts = []
+activity_alerts = []
+
+history_data = []
 
 system_stats = {
 
-    "latency": 42,
+```
+"latency": 42,
 
-    "online_users": 12,
+"online_users": 12,
 
-    "steam_alerts": 5,
+"activity_alerts": 5,
 
-    "feed_status": "LIVE",
+"feed_status": "LIVE",
 
-    "matches": 28
+"matches": 28
+```
 
 }
 
 USERS = {
 
-    "admin": {
+```
+"admin": {
 
-        "password": "123456",
+    "password": "123456",
 
-        "vip": True
+    "vip": True
 
-    }
+}
+```
 
 }
 
 @app.route("/")
 def home():
 
-    return jsonify({
+```
+return jsonify({
 
-        "service": "OddsSeokeo API",
+    "service": "Sports Intelligence API",
 
-        "status": "online"
+    "status": "online"
 
-    })
+})
+```
 
 @app.route("/login", methods=["POST"])
 def login():
 
-    data = request.json
+```
+data = request.json
 
-    username = data.get("username")
+username = data.get("username")
 
-    password = data.get("password")
+password = data.get("password")
 
-    user = USERS.get(username)
+user = USERS.get(username)
 
-    if not user:
-
-        return jsonify({
-
-            "error": "User not found"
-
-        }), 401
-
-    if user["password"] != password:
-
-        return jsonify({
-
-            "error": "Wrong password"
-
-        }), 401
-
-    token = jwt.encode({
-
-        "username": username,
-
-        "vip": True,
-
-        "exp":
-
-            datetime.datetime.utcnow()
-
-            + datetime.timedelta(days=30)
-
-    },
-
-    SECRET_KEY,
-
-    algorithm="HS256")
+if not user:
 
     return jsonify({
 
-        "token": token,
+        "error": "User not found"
 
-        "vip": True
+    }), 401
 
-    })
+if user["password"] != password:
+
+    return jsonify({
+
+        "error": "Wrong password"
+
+    }), 401
+
+token = jwt.encode({
+
+    "username": username,
+
+    "vip": True,
+
+    "exp":
+
+        datetime.datetime.utcnow()
+
+        + datetime.timedelta(days=30)
+
+},
+
+SECRET_KEY,
+
+algorithm="HS256")
+
+return jsonify({
+
+    "token": token,
+
+    "vip": True
+
+})
+```
 
 def verify_token(req):
 
-    auth = req.headers.get("Authorization")
+```
+auth = req.headers.get("Authorization")
 
-    if not auth:
+if not auth:
 
-        return None
+    return None
 
-    try:
+try:
 
-        token = auth.split(" ")[1]
+    token = auth.split(" ")[1]
 
-        decoded = jwt.decode(
+    decoded = jwt.decode(
 
-            token,
+        token,
 
-            SECRET_KEY,
+        SECRET_KEY,
 
-            algorithms=["HS256"]
+        algorithms=["HS256"]
 
-        )
+    )
 
-        return decoded
+    return decoded
 
-    except:
+except:
 
-        return None
+    return None
+```
 
 @app.route("/stats")
 def stats():
 
-    user = verify_token(request)
+```
+user = verify_token(request)
 
-    if not user:
+if not user:
 
-        return jsonify({
+    return jsonify({
 
-            "error": "Unauthorized"
+        "error": "Unauthorized"
 
-        }), 401
+    }), 401
 
-    return jsonify(system_stats)
+return jsonify(system_stats)
+```
 
 @app.route("/alerts")
 def alerts():
 
-    user = verify_token(request)
+```
+user = verify_token(request)
 
-    if not user:
+if not user:
 
-        return jsonify({
+    return jsonify({
 
-            "error": "Unauthorized"
+        "error": "Unauthorized"
 
-        }), 401
+    }), 401
 
-    return jsonify(steam_alerts)
+return jsonify(activity_alerts)
+```
 
-@app.route("/steam")
-def steam():
+@app.route("/matches")
+def matches():
 
-    user = verify_token(request)
+```
+user = verify_token(request)
 
-    if not user:
+if not user:
 
-        return jsonify({
+    return jsonify({
 
-            "error": "Unauthorized"
+        "error": "Unauthorized"
 
-        }), 401
+    }), 401
 
-    return jsonify(steam_data)
+return jsonify(matches_data)
+```
+
+@app.route("/console")
+def console():
+
+```
+user = verify_token(request)
+
+if not user:
+
+    return jsonify({
+
+        "error": "Unauthorized"
+
+    }), 401
+
+logs = [
+
+    "[17:42:12] MOMENTUM SPIKE DETECTED",
+
+    "[17:42:15] HIGH PRESSURE ACTIVE",
+
+    "[17:42:18] LIVE EVENT CLUSTER",
+
+    "[17:42:22] MATCH INTENSITY INCREASE",
+
+    "[17:42:25] ANALYTICS ENGINE RUNNING"
+
+]
+
+return jsonify(logs)
+```
+
+@app.route("/history")
+def history():
+
+```
+user = verify_token(request)
+
+if not user:
+
+    return jsonify({
+
+        "error": "Unauthorized"
+
+    }), 401
+
+return jsonify(history_data[:20])
+```
 
 def realtime_loop():
 
-    global steam_data
+```
+global matches_data
 
-    while True:
+while True:
 
-        system_stats["latency"] = random.randint(25, 80)
+    system_stats["latency"] = random.randint(25, 80)
 
-        system_stats["online_users"] = random.randint(8, 26)
+    system_stats["online_users"] = random.randint(8, 26)
 
-        system_stats["steam_alerts"] = random.randint(2, 12)
+    system_stats["activity_alerts"] = random.randint(2, 12)
 
-        system_stats["matches"] = random.randint(18, 52)
+    system_stats["matches"] = random.randint(18, 52)
 
-        steam_alerts.insert(
+    activity_alerts.insert(
 
-            0,
+        0,
 
-            {
+        {
 
-                "match": "PSG vs Marseille",
+            "match": "PSG vs Marseille",
 
-                "alert": "HIGH STEAM",
+            "alert": "HIGH MOMENTUM",
 
-                "book": "SBOBET",
+            "source": "LIVE ENGINE",
 
-                "move": "+0.12",
+            "activity": "+0.12",
 
-                "time":
+            "time":
 
-                    datetime.datetime.now()
+                datetime.datetime.now()
 
-                    .strftime("%H:%M:%S")
+                .strftime("%H:%M:%S")
 
-            }
+        }
 
-        )
+    )
 
-        steam_alerts[:] = steam_alerts[:10]
+    activity_alerts[:] = activity_alerts[:10]
 
-        steam_data = [
+    matches_data = [
 
-            {
+        {
 
-                "match": "PSG vs Marseille",
+            "match": "PSG vs Marseille",
 
-                "home_team": "PSG",
+            "home_team": "PSG",
 
-                "away_team": "Marseille",
+            "away_team": "Marseille",
 
-                "status": "LIVE",
+            "status": "LIVE",
 
-                "minute": random.randint(12, 88),
+            "minute": random.randint(12, 88),
 
-                "kickoff_in": 0,
+            "kickoff_in": 0,
 
-                "market": "TAI/XIU",
+            "market": "INTENSITY",
 
-                "line": "2.5",
+            "line": "2.5",
 
-                "odds": round(
+            "velocity": random.randint(
 
-                    random.uniform(0.80, 1.20),
+                40,
 
-                    2
+                95
 
-                ),
+            ),
 
-                "steam_level": random.choice(
+            "activity_level": random.choice(
 
-                    [
+                [
 
-                        "LOW",
+                    "LOW",
 
-                        "MEDIUM",
+                    "MEDIUM",
 
-                        "HIGH",
+                    "HIGH",
 
-                        "EXTREME"
+                    "EXTREME"
 
-                    ]
+                ]
 
-                ),
+            ),
 
-                "velocity": random.randint(
+            "pressure": random.randint(
 
-                    40,
+                40,
 
-                    95
+                99
 
-                ),
+            ),
 
-                "lead_book": "SBOBET",
+            "tempo": random.choice(
 
-                "follow_book": "ISN",
+                [
 
-                "follow_delay": random.randint(
+                    "SLOW",
 
-                    1,
+                    "NORMAL",
 
-                    8
+                    "FAST"
 
-                ),
+                ]
 
-                "move": "+0.05"
+            ),
 
-            },
+            "momentum": random.choice(
 
-            {
+                [
 
-                "match": "Barcelona vs Real Madrid",
+                    "HOME",
 
-                "home_team": "Barcelona",
+                    "AWAY",
 
-                "away_team": "Real Madrid",
+                    "BALANCED"
 
-                "status": "STARTING SOON",
+                ]
 
-                "minute": 0,
+            ),
 
-                "kickoff_in": random.randint(
+            "intensity": random.choice(
 
-                    5,
+                [
 
-                    28
+                    "LOW",
 
-                ),
+                    "MEDIUM",
 
-                "market": "TAI/XIU",
+                    "HIGH",
 
-                "line": "3.0",
+                    "EXTREME"
 
-                "odds": round(
+                ]
 
-                    random.uniform(0.80, 1.20),
+            ),
 
-                    2
+            "lead_source": "CORE FEED",
 
-                ),
+            "follow_source": "LIVE ENGINE",
 
-                "steam_level": random.choice(
+            "follow_delay": random.randint(
 
-                    [
+                1,
 
-                        "LOW",
+                8
 
-                        "MEDIUM",
+            ),
 
-                        "HIGH"
+            "activity": "+0.05"
 
-                    ]
+        },
 
-                ),
+        {
 
-                "velocity": random.randint(
+            "match": "Barcelona vs Real Madrid",
 
-                    30,
+            "home_team": "Barcelona",
 
-                    90
+            "away_team": "Real Madrid",
 
-                ),
+            "status": "STARTING SOON",
 
-                "lead_book": "SABA",
+            "minute": 0,
 
-                "follow_book": "KSPORT",
+            "kickoff_in": random.randint(
 
-                "follow_delay": random.randint(
+                5,
 
-                    1,
+                28
 
-                    8
+            ),
 
-                ),
+            "market": "PRESSURE",
 
-                "move": "-0.04"
+            "line": "3.0",
 
-            }
+            "velocity": random.randint(
 
-        ]
+                30,
 
-        time.sleep(3)
+                90
+
+            ),
+
+            "activity_level": random.choice(
+
+                [
+
+                    "LOW",
+
+                    "MEDIUM",
+
+                    "HIGH"
+
+                ]
+
+            ),
+
+            "pressure": random.randint(
+
+                40,
+
+                99
+
+            ),
+
+            "tempo": random.choice(
+
+                [
+
+                    "SLOW",
+
+                    "NORMAL",
+
+                    "FAST"
+
+                ]
+
+            ),
+
+            "momentum": random.choice(
+
+                [
+
+                    "HOME",
+
+                    "AWAY",
+
+                    "BALANCED"
+
+                ]
+
+            ),
+
+            "intensity": random.choice(
+
+                [
+
+                    "LOW",
+
+                    "MEDIUM",
+
+                    "HIGH",
+
+                    "EXTREME"
+
+                ]
+
+            ),
+
+            "lead_source": "EVENT ENGINE",
+
+            "follow_source": "TRACKER NODE",
+
+            "follow_delay": random.randint(
+
+                1,
+
+                8
+
+            ),
+
+            "activity": "-0.04"
+
+        }
+
+    ]
+
+    history_data.insert(
+
+        0,
+
+        {
+
+            "time":
+
+                datetime.datetime.now()
+
+                .strftime("%H:%M:%S"),
+
+            "matches": matches_data
+
+        }
+
+    )
+
+    history_data[:] = history_data[:20]
+
+    time.sleep(3)
+```
 
 threading.Thread(
 
-    target=realtime_loop,
+```
+target=realtime_loop,
 
-    daemon=True
+daemon=True
+```
 
 ).start()
 
-if __name__ == "__main__":
+if **name** == "**main**":
 
-    port = int(
+```
+port = int(
 
-        os.environ.get(
+    os.environ.get(
 
-            "PORT",
+        "PORT",
 
-            5001
-
-        )
-
-    )
-
-    app.run(
-
-        host="0.0.0.0",
-
-        port=port
+        5001
 
     )
+
+)
+
+app.run(
+
+    host="0.0.0.0",
+
+    port=port
+
+)
+```
