@@ -8,7 +8,7 @@ import os
 import jwt
 import datetime
 
-app = Flask(**name**)
+app = Flask(__name__)
 
 CORS(app)
 
