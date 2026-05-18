@@ -1,3 +1,4 @@
+```python
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import threading
@@ -14,6 +15,22 @@ CORS(app)
 SECRET_KEY = "oddssokeo_vip_secret"
 
 steam_data = []
+
+steam_alerts = []
+
+system_stats = {
+
+    "latency": 42,
+
+    "online_users": 12,
+
+    "steam_alerts": 5,
+
+    "feed_status": "LIVE",
+
+    "matches": 28
+
+}
 
 USERS = {
 
@@ -117,6 +134,36 @@ def verify_token(req):
 
         return None
 
+@app.route("/stats")
+def stats():
+
+    user = verify_token(request)
+
+    if not user:
+
+        return jsonify({
+
+            "error": "Unauthorized"
+
+        }), 401
+
+    return jsonify(system_stats)
+
+@app.route("/alerts")
+def alerts():
+
+    user = verify_token(request)
+
+    if not user:
+
+        return jsonify({
+
+            "error": "Unauthorized"
+
+        }), 401
+
+    return jsonify(steam_alerts)
+
 @app.route("/steam")
 def steam():
 
@@ -137,6 +184,40 @@ def realtime_loop():
     global steam_data
 
     while True:
+
+        system_stats["latency"] = random.randint(25, 80)
+
+        system_stats["online_users"] = random.randint(8, 26)
+
+        system_stats["steam_alerts"] = random.randint(2, 12)
+
+        system_stats["matches"] = random.randint(18, 52)
+
+        steam_alerts.insert(
+
+            0,
+
+            {
+
+                "match": "PSG vs Marseille",
+
+                "alert": "Sharp Steam Move",
+
+                "book": "SBOBET",
+
+                "move": "+0.12",
+
+                "time":
+
+                    datetime.datetime.now()
+
+                    .strftime("%H:%M:%S")
+
+            }
+
+        )
+
+        steam_alerts[:] = steam_alerts[:8]
 
         steam_data = [
 
@@ -231,3 +312,4 @@ if __name__ == "__main__":
         port=port
 
     )
+```
