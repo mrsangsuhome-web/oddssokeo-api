@@ -1,4 +1,3 @@
-```python
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import threading
@@ -49,9 +48,9 @@ def home():
 
     return jsonify({
 
-        "status": "online",
+        "service": "OddsSeokeo API",
 
-        "service": "OddsSeokeo VIP API"
+        "status": "online"
 
     })
 
@@ -88,11 +87,17 @@ def login():
 
         "vip": True,
 
-        "exp": datetime.datetime.utcnow()
+        "exp":
 
-        + datetime.timedelta(days=30)
+            datetime.datetime.utcnow()
 
-    }, SECRET_KEY, algorithm="HS256")
+            + datetime.timedelta(days=30)
+
+    },
+
+    SECRET_KEY,
+
+    algorithm="HS256")
 
     return jsonify({
 
@@ -312,4 +317,3 @@ if __name__ == "__main__":
         port=port
 
     )
-```
