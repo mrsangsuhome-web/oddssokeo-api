@@ -70,9 +70,8 @@ token = jwt.encode(
     {
         "username": username,
         "vip": True,
-        "exp":
-            datetime.datetime.utcnow()
-            + datetime.timedelta(days=30)
+        "exp": datetime.datetime.utcnow()
+        + datetime.timedelta(days=30)
     },
     SECRET_KEY,
     algorithm="HS256"
@@ -213,9 +212,7 @@ while True:
             "alert": "HIGH MOMENTUM",
             "source": "LIVE ENGINE",
             "activity": "+0.12",
-            "time":
-                datetime.datetime.now()
-                .strftime("%H:%M:%S")
+            "time": datetime.datetime.now().strftime("%H:%M:%S")
         }
     )
 
@@ -293,9 +290,7 @@ while True:
     history_data.insert(
         0,
         {
-            "time":
-                datetime.datetime.now()
-                .strftime("%H:%M:%S"),
+            "time": datetime.datetime.now().strftime("%H:%M:%S"),
             "matches": matches_data
         }
     )
@@ -310,15 +305,10 @@ target=realtime_loop,
 daemon=True
 ).start()
 
-if **name** == "**main**":
+if __name__ == "__main__":
 
 ```
-port = int(
-    os.environ.get(
-        "PORT",
-        5001
-    )
-)
+port = int(os.environ.get("PORT", 5001))
 
 app.run(
     host="0.0.0.0",
