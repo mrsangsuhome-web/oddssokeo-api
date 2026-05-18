@@ -98,9 +98,7 @@ token = jwt.encode({
     "vip": True,
 
     "exp":
-
         datetime.datetime.utcnow()
-
         + datetime.timedelta(days=30)
 
 },
@@ -277,9 +275,7 @@ while True:
             "activity": "+0.12",
 
             "time":
-
                 datetime.datetime.now()
-
                 .strftime("%H:%M:%S")
 
         }
@@ -308,13 +304,7 @@ while True:
 
             "line": "2.5",
 
-            "velocity": random.randint(
-
-                40,
-
-                95
-
-            ),
+            "velocity": random.randint(40, 95),
 
             "activity_level": random.choice(
 
@@ -332,13 +322,7 @@ while True:
 
             ),
 
-            "pressure": random.randint(
-
-                40,
-
-                99
-
-            ),
+            "pressure": random.randint(40, 99),
 
             "tempo": random.choice(
 
@@ -388,13 +372,7 @@ while True:
 
             "follow_source": "LIVE ENGINE",
 
-            "follow_delay": random.randint(
-
-                1,
-
-                8
-
-            ),
+            "follow_delay": random.randint(1, 8),
 
             "activity": "+0.05"
 
@@ -412,25 +390,13 @@ while True:
 
             "minute": 0,
 
-            "kickoff_in": random.randint(
-
-                5,
-
-                28
-
-            ),
+            "kickoff_in": random.randint(5, 28),
 
             "market": "PRESSURE",
 
             "line": "3.0",
 
-            "velocity": random.randint(
-
-                30,
-
-                90
-
-            ),
+            "velocity": random.randint(30, 90),
 
             "activity_level": random.choice(
 
@@ -446,13 +412,7 @@ while True:
 
             ),
 
-            "pressure": random.randint(
-
-                40,
-
-                99
-
-            ),
+            "pressure": random.randint(40, 99),
 
             "tempo": random.choice(
 
@@ -502,13 +462,7 @@ while True:
 
             "follow_source": "TRACKER NODE",
 
-            "follow_delay": random.randint(
-
-                1,
-
-                8
-
-            ),
+            "follow_delay": random.randint(1, 8),
 
             "activity": "-0.04"
 
@@ -523,9 +477,7 @@ while True:
         {
 
             "time":
-
                 datetime.datetime.now()
-
                 .strftime("%H:%M:%S"),
 
             "matches": matches_data
