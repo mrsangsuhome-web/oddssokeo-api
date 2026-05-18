@@ -1,4 +1,3 @@
-```python
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -16,22 +15,12 @@ CORS(app)
 SECRET_KEY = "sports_intelligence_secret"
 
 matches_data = []
-activity_alerts = []
-history_data = []
 
 system_stats = {
     "latency": 42,
     "online_users": 12,
     "activity_alerts": 5,
-    "feed_status": "LIVE",
     "matches": 28
-}
-
-USERS = {
-    "admin": {
-        "password": "123456",
-        "vip": True
-    }
 }
 
 @app.route("/")
@@ -40,43 +29,6 @@ def home():
     return jsonify({
         "service": "Sports Intelligence API",
         "status": "online"
-    })
-
-@app.route("/login", methods=["POST"])
-def login():
-
-    data = request.json
-
-    username = data.get("username")
-    password = data.get("password")
-
-    user = USERS.get(username)
-
-    if not user:
-
-        return jsonify({
-            "error": "User not found"
-        }), 401
-
-    if user["password"] != password:
-
-        return jsonify({
-            "error": "Wrong password"
-        }), 401
-
-    token = jwt.encode(
-        {
-            "username": username,
-            "vip": True,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=30)
-        },
-        SECRET_KEY,
-        algorithm="HS256"
-    )
-
-    return jsonify({
-        "token": token,
-        "vip": True
     })
 
 @app.route("/stats")
@@ -89,7 +41,6 @@ def matches():
 
     return jsonify(matches_data)
 
-
 def realtime_loop():
 
     global matches_data
@@ -97,11 +48,15 @@ def realtime_loop():
     while True:
 
         system_stats["latency"] = random.randint(25, 80)
+
         system_stats["online_users"] = random.randint(8, 26)
+
         system_stats["activity_alerts"] = random.randint(2, 12)
+
         system_stats["matches"] = random.randint(18, 52)
 
         matches_data = [
+
             {
                 "home_team": "PSG",
                 "away_team": "Marseille",
@@ -127,6 +82,7 @@ def realtime_loop():
                     "BALANCED"
                 ])
             }
+
         ]
 
         time.sleep(3)
@@ -144,12 +100,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port
     )
-```
-
-Sau đó save file.
-
-Mở terminal backend:
-
-```bash
-git ad
-```
