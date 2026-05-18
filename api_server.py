@@ -1,4 +1,3 @@
-```python id="backend-complete-terminal-final"
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import threading
@@ -110,11 +109,7 @@ def login():
 
 def verify_token(req):
 
-    auth = req.headers.get(
-
-        "Authorization"
-
-    )
+    auth = req.headers.get("Authorization")
 
     if not auth:
 
@@ -185,24 +180,6 @@ def steam():
 
     return jsonify(steam_data)
 
-def random_level():
-
-    return random.choice(
-
-        [
-
-            "LOW",
-
-            "MEDIUM",
-
-            "HIGH",
-
-            "EXTREME"
-
-        ]
-
-    )
-
 def realtime_loop():
 
     global steam_data
@@ -255,61 +232,57 @@ def realtime_loop():
 
                 "status": "LIVE",
 
-                "minute": random.randint(
-
-                    12,
-
-                    88
-
-                ),
+                "minute": random.randint(12, 88),
 
                 "kickoff_in": 0,
 
-                "market": "O/U 2.5",
+                "market": "TAI/XIU",
 
                 "line": "2.5",
 
                 "odds": round(
 
-                    random.uniform(
-
-                        0.80,
-
-                        1.20
-
-                    ),
+                    random.uniform(0.80, 1.20),
 
                     2
 
                 ),
 
-                "steam_level":
+                "steam_level": random.choice(
 
-                    random_level(),
+                    [
 
-                "velocity":
+                        "LOW",
 
-                    random.randint(
+                        "MEDIUM",
 
-                        40,
+                        "HIGH",
 
-                        95
+                        "EXTREME"
 
-                    ),
+                    ]
+
+                ),
+
+                "velocity": random.randint(
+
+                    40,
+
+                    95
+
+                ),
 
                 "lead_book": "SBOBET",
 
                 "follow_book": "ISN",
 
-                "follow_delay":
+                "follow_delay": random.randint(
 
-                    random.randint(
+                    1,
 
-                        1,
+                    8
 
-                        8
-
-                    ),
+                ),
 
                 "move": "+0.05"
 
@@ -323,67 +296,63 @@ def realtime_loop():
 
                 "away_team": "Real Madrid",
 
-                "status":
-
-                    "STARTING SOON",
+                "status": "STARTING SOON",
 
                 "minute": 0,
 
-                "kickoff_in":
+                "kickoff_in": random.randint(
 
-                    random.randint(
+                    5,
 
-                        5,
+                    28
 
-                        28
+                ),
 
-                    ),
-
-                "market": "O/U 3.0",
+                "market": "TAI/XIU",
 
                 "line": "3.0",
 
                 "odds": round(
 
-                    random.uniform(
-
-                        0.80,
-
-                        1.20
-
-                    ),
+                    random.uniform(0.80, 1.20),
 
                     2
 
                 ),
 
-                "steam_level":
+                "steam_level": random.choice(
 
-                    random_level(),
+                    [
 
-                "velocity":
+                        "LOW",
 
-                    random.randint(
+                        "MEDIUM",
 
-                        30,
+                        "HIGH"
 
-                        90
+                    ]
 
-                    ),
+                ),
+
+                "velocity": random.randint(
+
+                    30,
+
+                    90
+
+                ),
 
                 "lead_book": "SABA",
 
                 "follow_book": "KSPORT",
 
-                "follow_delay":
+                "follow_delay": random.randint(
 
-                    random.randint(
+                    1,
 
-                        1,
+                    8
 
-                        8
-
-                    ),
+                ),
 
                 "move": "-0.04"
 
@@ -422,4 +391,3 @@ if __name__ == "__main__":
         port=port
 
     )
-```
