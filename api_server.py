@@ -1,22 +1,31 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from flask_socketio import SocketIO
 import threading
 import time
 import random
 import os
+import jwt
+import datetime
 
 app = Flask(__name__)
 
 CORS(app)
 
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*"
-)
+SECRET_KEY = "oddssokeo_vip_secret"
 
 steam_data = []
-logs = []
+
+USERS = {
+
+    "admin": {
+
+        "password": "123456",
+
+        "vip": True
+
+    }
+
+}
 
 @app.route("/")
 def home():
@@ -25,19 +34,107 @@ def home():
 
         "status": "online",
 
-        "service": "OddsSeokeo API"
+        "service": "OddsSeokeo VIP API"
 
     })
 
+@app.route("/login", methods=["POST"])
+def login():
+
+    data = request.json
+
+    username = data.get("username")
+
+    password = data.get("password")
+
+    user = USERS.get(username)
+
+    if not user:
+
+        return jsonify({
+
+            "error": "User not found"
+
+        }), 401
+
+    if user["password"] != password:
+
+        return jsonify({
+
+            "error": "Wrong password"
+
+        }), 401
+
+    token = jwt.encode({
+
+        "username": username,
+
+        "vip": True,
+
+        "exp": datetime.datetime.utcnow()
+
+        + datetime.timedelta(days=30)
+
+    }, SECRET_KEY, algorithm="HS256")
+
+    return jsonify({
+
+        "token": token,
+
+        "vip": True
+
+    })
+
+def verify_token(req):
+
+    auth = req.headers.get(
+
+        "Authorization"
+
+    )
+
+    if not auth:
+
+        return None
+
+    try:
+
+        token = auth.split(" ")[1]
+
+        decoded = jwt.decode(
+
+            token,
+
+            SECRET_KEY,
+
+            algorithms=["HS256"]
+
+        )
+
+        return decoded
+
+    except:
+
+        return None
+
 @app.route("/steam")
 def steam():
+
+    user = verify_token(request)
+
+    if not user:
+
+        return jsonify({
+
+            "error": "Unauthorized"
+
+        }), 401
 
     return jsonify(steam_data)
 
 def realtime_loop():
 
     global steam_data
-    global logs
 
     while True:
 
@@ -54,11 +151,14 @@ def realtime_loop():
                 "line": "2.5",
 
                 "odds": round(
+
                     random.uniform(
                         0.8,
                         1.2
                     ),
+
                     2
+
                 ),
 
                 "move": "+0.05",
@@ -80,11 +180,14 @@ def realtime_loop():
                 "line": "3.0",
 
                 "odds": round(
+
                     random.uniform(
                         0.8,
                         1.2
                     ),
+
                     2
+
                 ),
 
                 "move": "-0.04",
@@ -97,41 +200,34 @@ def realtime_loop():
 
         ]
 
-        logs.insert(
-            0,
-            "Realtime odds updated"
-        )
-
-        logs = logs[:10]
-
-        socketio.emit(
-            "steam_update",
-            steam_data
-        )
-
-        socketio.emit(
-            "activity_logs",
-            logs
-        )
-
         time.sleep(3)
 
 threading.Thread(
+
     target=realtime_loop,
+
     daemon=True
+
 ).start()
 
 if __name__ == "__main__":
 
     port = int(
+
         os.environ.get(
+
             "PORT",
+
             5001
+
         )
+
     )
 
-    socketio.run(
-        app,
+    app.run(
+
         host="0.0.0.0",
+
         port=port
+
     )
