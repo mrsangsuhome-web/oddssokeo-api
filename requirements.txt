@@ -1,6 +1,6 @@
 flask
 flask-cors
-flask-socketio
+flask-//io
 gunicorn
 eventlet
 pyjwt
