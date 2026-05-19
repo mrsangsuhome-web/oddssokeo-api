@@ -1,27 +1,13 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 from flask_cors import CORS
-
-import threading
-import time
 import random
-import os
-import jwt
-import datetime
+import time
 
 app = Flask(__name__)
 
 CORS(app)
 
-SECRET_KEY = "sports_intelligence_secret"
-
-matches_data = []
-
-system_stats = {
-    "latency": 42,
-    "online_users": 12,
-    "activity_alerts": 5,
-    "matches": 28
-}
+# ROOT
 
 @app.route("/")
 def home():
@@ -31,72 +17,153 @@ def home():
         "status": "online"
     })
 
+# STATS API
+
 @app.route("/stats")
 def stats():
 
-    return jsonify(system_stats)
+    return jsonify({
+
+        "latency": random.randint(20, 90),
+
+        "online_users": random.randint(5, 20),
+
+        "activity_alerts": random.randint(1, 10),
+
+        "matches": random.randint(20, 50),
+
+    })
+
+# MATCHES API
 
 @app.route("/matches")
 def matches():
 
-    return jsonify(matches_data)
+    data = [
 
-def realtime_loop():
+        {
+            "home_team": "PSG",
+            "away_team": "Marseille",
+            "status": "LIVE",
+            "minute": random.randint(1, 90),
+            "pressure": random.randint(50, 100),
+            "tempo": random.choice([
+                "FAST",
+                "NORMAL",
+                "SLOW"
+            ]),
+            "momentum": random.choice([
+                "HOME",
+                "AWAY",
+                "BALANCED"
+            ]),
+            "velocity": random.randint(40, 100),
+            "activity_level": random.choice([
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "EXTREME"
+            ]),
+            "kickoff_in": 0
+        },
 
-    global matches_data
+        {
+            "home_team": "Barcelona",
+            "away_team": "Real Madrid",
+            "status": "LIVE",
+            "minute": random.randint(1, 90),
+            "pressure": random.randint(50, 100),
+            "tempo": random.choice([
+                "FAST",
+                "NORMAL",
+                "SLOW"
+            ]),
+            "momentum": random.choice([
+                "HOME",
+                "AWAY",
+                "BALANCED"
+            ]),
+            "velocity": random.randint(40, 100),
+            "activity_level": random.choice([
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "EXTREME"
+            ]),
+            "kickoff_in": 0
+        },
 
-    while True:
+        {
+            "home_team": "Liverpool",
+            "away_team": "Manchester City",
+            "status": "LIVE",
+            "minute": random.randint(1, 90),
+            "pressure": random.randint(50, 100),
+            "tempo": random.choice([
+                "FAST",
+                "NORMAL",
+                "SLOW"
+            ]),
+            "momentum": random.choice([
+                "HOME",
+                "AWAY",
+                "BALANCED"
+            ]),
+            "velocity": random.randint(40, 100),
+            "activity_level": random.choice([
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "EXTREME"
+            ]),
+            "kickoff_in": 0
+        },
 
-        system_stats["latency"] = random.randint(25, 80)
+        {
+            "home_team": "Bayern",
+            "away_team": "Dortmund",
+            "status": "LIVE",
+            "minute": random.randint(1, 90),
+            "pressure": random.randint(50, 100),
+            "tempo": random.choice([
+                "FAST",
+                "NORMAL",
+                "SLOW"
+            ]),
+            "momentum": random.choice([
+                "HOME",
+                "AWAY",
+                "BALANCED"
+            ]),
+            "velocity": random.randint(40, 100),
+            "activity_level": random.choice([
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "EXTREME"
+            ]),
+            "kickoff_in": 0
+        }
 
-        system_stats["online_users"] = random.randint(8, 26)
+    ]
 
-        system_stats["activity_alerts"] = random.randint(2, 12)
+    return jsonify(data)
 
-        system_stats["matches"] = random.randint(18, 52)
+# HEALTH CHECK
 
-        matches_data = [
+@app.route("/health")
+def health():
 
-            {
-                "home_team": "PSG",
-                "away_team": "Marseille",
-                "status": "LIVE",
-                "minute": random.randint(12, 88),
-                "kickoff_in": 0,
-                "velocity": random.randint(40, 95),
-                "activity_level": random.choice([
-                    "LOW",
-                    "MEDIUM",
-                    "HIGH",
-                    "EXTREME"
-                ]),
-                "pressure": random.randint(40, 99),
-                "tempo": random.choice([
-                    "SLOW",
-                    "NORMAL",
-                    "FAST"
-                ]),
-                "momentum": random.choice([
-                    "HOME",
-                    "AWAY",
-                    "BALANCED"
-                ])
-            }
+    return jsonify({
+        "status": "healthy",
+        "time": int(time.time())
+    })
 
-        ]
-
-        time.sleep(3)
-
-threading.Thread(
-    target=realtime_loop,
-    daemon=True
-).start()
+# RUN SERVER
 
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT", 5001))
-
     app.run(
         host="0.0.0.0",
-        port=port
+        port=10000
     )
