@@ -3,7 +3,6 @@ from flask_cors import CORS
 
 import requests
 import time
-import os
 
 app = Flask(__name__)
 
@@ -54,11 +53,8 @@ def matches():
     )
 
     response = requests.get(
-
         url,
-
         timeout=20
-
     )
 
     data = response.json()
@@ -115,12 +111,10 @@ def matches():
                 "league":
                     "EPL",
 
-                "open_ah":
-                    str(
-                        outcomes[0].get(
-                            "point",
-                            "-"
-                        )
+                "commence_time":
+                    match.get(
+                        "commence_time",
+                        "-"
                     ),
 
                 "curr_ah":
@@ -129,12 +123,6 @@ def matches():
                             "point",
                             "-"
                         )
-                    ),
-
-                "open_odds":
-                    outcomes[0].get(
-                        "price",
-                        "-"
                     ),
 
                 "curr_odds":
@@ -161,9 +149,6 @@ def matches():
     return jsonify(CACHE)
 
 app.run(
-
     host="0.0.0.0",
-
     port=10000
-
 )
