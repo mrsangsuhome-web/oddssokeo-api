@@ -202,7 +202,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(1600)
+        time.sleep(3600)
 
 if __name__ == "__main__":
 
