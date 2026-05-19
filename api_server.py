@@ -2,28 +2,20 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 import requests
-import os
 import time
+import os
 
 app = Flask(__name__)
 
 CORS(app)
 
-API_KEY = os.getenv(
-    "API_KEY"
-)
+API_KEY = "4e33248024942ca4651ab2f6d806c05d"
 
 CACHE = []
 
 LAST_UPDATE = 0
 
 UPDATE_INTERVAL = 180
-
-LEAGUES = [
-
-    "soccer_epl"
-
-]
 
 @app.route("/")
 
@@ -52,125 +44,117 @@ def matches():
 
         return jsonify(CACHE)
 
-    all_matches = []
+    url = (
 
-    for league in LEAGUES:
+        f"https://api.the-odds-api.com/v4/sports/"
+        f"soccer_epl/odds/?apiKey={API_KEY}"
+        f"&regions=eu"
+        f"&markets=spreads,totals"
+
+    )
+
+    response = requests.get(
+
+        url,
+
+        timeout=20
+
+    )
+
+    data = response.json()
+
+    results = []
+
+    for match in data:
 
         try:
 
-            url = (
-
-                f"https://api.the-odds-api.com/v4/sports/"
-                f"{league}/odds/?apiKey={API_KEY}"
-                f"&regions=eu"
-                f"&markets=spreads,totals"
-
+            bookmakers = (
+                match.get(
+                    "bookmakers",
+                    []
+                )
             )
 
-            response = requests.get(
+            if not bookmakers:
+                continue
 
-                url,
-
-                timeout=20
-
+            first_book = (
+                bookmakers[0]
             )
 
-            data = response.json()
+            markets = (
+                first_book.get(
+                    "markets",
+                    []
+                )
+            )
 
-            for match in data:
+            if not markets:
+                continue
 
-                try:
+            first_market = (
+                markets[0]
+            )
 
-                    bookmakers = (
-                        match.get(
-                            "bookmakers",
-                            []
+            outcomes = (
+                first_market.get(
+                    "outcomes",
+                    []
+                )
+            )
+
+            if len(outcomes) < 2:
+                continue
+
+            results.append({
+
+                "match":
+                    f"{match['home_team']} vs {match['away_team']}",
+
+                "league":
+                    "EPL",
+
+                "open_ah":
+                    str(
+                        outcomes[0].get(
+                            "point",
+                            "-"
                         )
-                    )
+                    ),
 
-                    if not bookmakers:
-                        continue
-
-                    first_book = (
-                        bookmakers[0]
-                    )
-
-                    markets = (
-                        first_book.get(
-                            "markets",
-                            []
+                "curr_ah":
+                    str(
+                        outcomes[0].get(
+                            "point",
+                            "-"
                         )
-                    )
+                    ),
 
-                    if not markets:
-                        continue
+                "open_odds":
+                    outcomes[0].get(
+                        "price",
+                        "-"
+                    ),
 
-                    first_market = (
-                        markets[0]
-                    )
-
-                    outcomes = (
-                        first_market.get(
-                            "outcomes",
-                            []
+                "curr_odds":
+                    str(
+                        outcomes[0].get(
+                            "price",
+                            "-"
                         )
-                    )
+                    ),
 
-                    if len(outcomes) < 2:
-                        continue
+                "pi":
+                    "+0.08"
 
-                    all_matches.append({
-
-                        "match":
-                            f"{match['home_team']} vs {match['away_team']}",
-
-                        "league":
-                            "EPL",
-
-                        "open_ah":
-                            str(
-                                outcomes[0].get(
-                                    "point",
-                                    "-"
-                                )
-                            ),
-
-                        "curr_ah":
-                            str(
-                                outcomes[0].get(
-                                    "point",
-                                    "-"
-                                )
-                            ),
-
-                        "open_odds":
-                            outcomes[0].get(
-                                "price",
-                                "-"
-                            ),
-
-                        "curr_odds":
-                            str(
-                                outcomes[0].get(
-                                    "price",
-                                    "-"
-                                )
-                            ),
-
-                        "pi":
-                            "+0.08"
-
-                    })
-
-                except Exception as e:
-
-                    print(e)
+            })
 
         except Exception as e:
 
             print(e)
 
-    CACHE = all_matches
+    CACHE = results
 
     LAST_UPDATE = now
 
