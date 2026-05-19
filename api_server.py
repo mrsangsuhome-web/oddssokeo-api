@@ -9,7 +9,11 @@ CORS(app)
 
 API_KEY = "6073d49f9663c2f28a4b82dc1dfb002d"
 
-SPORT = "soccer_epl"
+SPORTS = [
+    "soccer_epl",
+    "soccer_uefa_nations_league",
+    "soccer_brazil_campeonato"
+]
 
 cached_matches = []
 
@@ -17,69 +21,79 @@ def fetch_odds():
 
     global cached_matches
 
+    results = []
+
     try:
 
-        url = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds"
+        for SPORT in SPORTS:
 
-        params = {
-            "apiKey": API_KEY,
-            "regions": "uk",
-            "markets": "spreads",
-            "oddsFormat": "decimal"
-        }
+            url = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds"
 
-        response = requests.get(
-            url,
-            params=params,
-            timeout=20
-        )
+            params = {
+                "apiKey": API_KEY,
+                "regions": "uk",
+                "markets": "spreads",
+                "oddsFormat": "decimal"
+            }
 
-        data = response.json()
-
-        results = []
-
-        for game in data:
-
-            home_team = game.get(
-                "home_team",
-                "HOME"
+            response = requests.get(
+                url,
+                params=params,
+                timeout=20
             )
 
-            away_team = next(
-                (
-                    t for t in
-                    game.get(
-                        "teams",
-                        []
-                    )
-                    if t != home_team
-                ),
-                "AWAY"
-            )
+            data = response.json()
 
-            commence_time = game.get(
-                "commence_time",
-                ""
-            )
+            if not isinstance(data, list):
+                continue
 
-            results.append({
+            for game in data:
 
-                "match":
-                    f"{home_team} vs {away_team}",
+                home_team = game.get(
+                    "home_team",
+                    "HOME"
+                )
 
-                "league":
-                    "EPL",
+                away_team = next(
+                    (
+                        t for t in
+                        game.get(
+                            "teams",
+                            []
+                        )
+                        if t != home_team
+                    ),
+                    "AWAY"
+                )
 
-                "commence_time":
-                    commence_time,
+                commence_time = game.get(
+                    "commence_time",
+                    ""
+                )
 
-                "curr_odds":
-                    "0.88",
+                results.append({
 
-                "curr_ah":
-                    "2.5"
+                    "match":
+                        f"{home_team} vs {away_team}",
 
-            })
+                    "league":
+                        SPORT
+                        .replace(
+                            "soccer_",
+                            ""
+                        )
+                        .upper(),
+
+                    "commence_time":
+                        commence_time,
+
+                    "curr_odds":
+                        "0.88",
+
+                    "curr_ah":
+                        "2.5"
+
+                })
 
         cached_matches = results
 
@@ -112,7 +126,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(900)
+        time.sleep(600)
 
 if __name__ == "__main__":
 
@@ -127,4 +141,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-
