@@ -2,36 +2,51 @@ import requests
 
 BOT_TOKEN = "8925919932:AAE_CN7NRn9JCbtknc9RqwXdzc9xqfGpG6g"
 
-CHAT_ID = "@sokeoscanner_bot"
+CHAT_ID = "@sokeoscanner"
 
 def send_telegram(message):
 
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    url = (
+        f"https://api.telegram.org/bot"
+        f"{BOT_TOKEN}/sendMessage"
+    )
 
     payload = {
 
         "chat_id": CHAT_ID,
 
-        "text": message
+        "text": message,
+
+        "parse_mode": "HTML"
 
     }
 
     try:
 
-        requests.post(url, data=payload)
+        response = requests.post(
+            url,
+            data=payload
+        )
 
-        print("Telegram sent")
+        print(response.text)
 
     except Exception as e:
 
         print(e)
 
-# TEST ALERTS
+# TEST
 
-send_telegram("⚡ Có trận mới được cập nhật")
+send_telegram("""
 
-send_telegram("🔥 Live scanner đang hoạt động")
+🚨 VALUE MOVE ALERT
 
-send_telegram("📈 Odds movement detected")
+⚽ Monaco vs PSG
 
-send_telegram("🟢 API online")
+📉 Line: -2
+
+SABA: 90
+CMD: 95
+
+📈 Diff: +5
+
+""")
