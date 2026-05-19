@@ -1,5 +1,8 @@
 import requests
 import time
+import json
+import os
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 from threading import Thread
@@ -16,6 +19,8 @@ SPORTS = [
     "soccer_germany_bundesliga",
     "soccer_brazil_campeonato"
 ]
+
+CACHE_FILE = "cache.json"
 
 cached_matches = []
 
@@ -92,7 +97,48 @@ def fetch_odds():
 
         if len(results) == 0:
 
-            results = [
+            raise Exception(
+                "NO MATCHES FROM API"
+            )
+
+        cached_matches = results[:20]
+
+        with open(
+            CACHE_FILE,
+            "w"
+        ) as f:
+
+            json.dump(
+                cached_matches,
+                f
+            )
+
+        print(
+            f"UPDATED {len(cached_matches)} MATCHES"
+        )
+
+    except Exception as e:
+
+        print("API ERROR:", e)
+
+        if os.path.exists(
+            CACHE_FILE
+        ):
+
+            with open(
+                CACHE_FILE,
+                "r"
+            ) as f:
+
+                cached_matches = json.load(f)
+
+            print(
+                "USING CACHE DATA"
+            )
+
+        else:
+
+            cached_matches = [
 
                 {
                     "match":
@@ -130,23 +176,18 @@ def fetch_odds():
 
             ]
 
-        cached_matches = results
-
-        print(
-            f"UPDATED {len(results)} MATCHES"
-        )
-
-    except Exception as e:
-
-        print("API ERROR:", e)
-
 @app.route("/")
 
 def home():
 
     return jsonify({
-        "status": "running",
-        "matches": len(cached_matches)
+
+        "status":
+            "running",
+
+        "matches":
+            len(cached_matches)
+
     })
 
 @app.route("/matches")
@@ -176,3 +217,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
+
