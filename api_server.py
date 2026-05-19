@@ -9,12 +9,13 @@ CORS(app)
 
 API_KEY = "6073d49f9663c2f28a4b82dc1dfb002d"
 
-SPORTS = [ 
-"soccer_usa_mls",
- "soccer_brazil_campeonato", 
- "soccer_spain_la_liga", 
- "soccer_germany_bundesliga"
- ]
+SPORTS = [
+    "soccer_epl",
+    "soccer_usa_mls",
+    "soccer_spain_la_liga",
+    "soccer_germany_bundesliga",
+    "soccer_brazil_campeonato"
+]
 
 cached_matches = []
 
@@ -55,15 +56,8 @@ def fetch_odds():
                     "HOME"
                 )
 
-                away_team = next(
-                    (
-                        t for t in
-                        game.get(
-                            "teams",
-                            []
-                        )
-                        if t != home_team
-                    ),
+                away_team = game.get(
+                    "away_team",
                     "AWAY"
                 )
 
@@ -96,6 +90,46 @@ def fetch_odds():
 
                 })
 
+        if len(results) == 0:
+
+            results = [
+
+                {
+                    "match":
+                        "Chelsea vs Arsenal",
+
+                    "league":
+                        "EPL",
+
+                    "commence_time":
+                        "2026-05-20T19:00:00Z",
+
+                    "curr_odds":
+                        "0.88",
+
+                    "curr_ah":
+                        "2.5"
+                },
+
+                {
+                    "match":
+                        "Barcelona vs Real Madrid",
+
+                    "league":
+                        "LA LIGA",
+
+                    "commence_time":
+                        "2026-05-21T20:00:00Z",
+
+                    "curr_odds":
+                        "0.90",
+
+                    "curr_ah":
+                        "0.5"
+                }
+
+            ]
+
         cached_matches = results
 
         print(
@@ -127,7 +161,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(600)
+        time.sleep(1600)
 
 if __name__ == "__main__":
 
