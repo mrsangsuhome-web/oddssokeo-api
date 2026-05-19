@@ -1,154 +1,120 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
-
 import requests
 import time
+from flask import Flask, jsonify
+from flask_cors import CORS
+from threading import Thread
 
 app = Flask(__name__)
-
 CORS(app)
 
-API_KEY = "4e33248024942ca4651ab2f6d806c05d"
+API_KEY = "6073d49f9663c2f28a4b82dc1dfb002d"
 
-CACHE = []
+SPORT = "soccer_epl"
 
-LAST_UPDATE = 0
+cached_matches = []
 
-UPDATE_INTERVAL = 180
+def fetch_odds():
 
-@app.route("/")
+    global cached_matches
 
-def home():
+    try:
 
-    return {
+        url = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds"
 
-        "status":
-            "scanner online"
+        params = {
+            "apiKey": API_KEY,
+            "regions": "uk",
+            "markets": "spreads",
+            "oddsFormat": "decimal"
+        }
 
-    }
+        response = requests.get(
+            url,
+            params=params,
+            timeout=20
+        )
 
-@app.route("/matches")
+        data = response.json()
 
-def matches():
+        results = []
 
-    global CACHE
-    global LAST_UPDATE
+        for game in data:
 
-    now = time.time()
-
-    if (
-        now - LAST_UPDATE
-        < UPDATE_INTERVAL
-    ):
-
-        return jsonify(CACHE)
-
-    url = (
-
-        f"https://api.the-odds-api.com/v4/sports/"
-        f"soccer_epl/odds/?apiKey={API_KEY}"
-        f"&regions=eu"
-        f"&markets=spreads,totals"
-
-    )
-
-    response = requests.get(
-        url,
-        timeout=20
-    )
-
-    data = response.json()
-
-    results = []
-
-    for match in data:
-
-        try:
-
-            bookmakers = (
-                match.get(
-                    "bookmakers",
-                    []
-                )
+            home_team = game.get(
+                "home_team",
+                "HOME"
             )
 
-            if not bookmakers:
-                continue
-
-            first_book = (
-                bookmakers[0]
+            away_team = next(
+                (
+                    t for t in
+                    game.get(
+                        "teams",
+                        []
+                    )
+                    if t != home_team
+                ),
+                "AWAY"
             )
 
-            markets = (
-                first_book.get(
-                    "markets",
-                    []
-                )
+            commence_time = game.get(
+                "commence_time",
+                ""
             )
-
-            if not markets:
-                continue
-
-            first_market = (
-                markets[0]
-            )
-
-            outcomes = (
-                first_market.get(
-                    "outcomes",
-                    []
-                )
-            )
-
-            if len(outcomes) < 2:
-                continue
 
             results.append({
 
                 "match":
-                    f"{match['home_team']} vs {match['away_team']}",
+                    f"{home_team} vs {away_team}",
 
                 "league":
                     "EPL",
 
                 "commence_time":
-                    match.get(
-                        "commence_time",
-                        "-"
-                    ),
-
-                "curr_ah":
-                    str(
-                        outcomes[0].get(
-                            "point",
-                            "-"
-                        )
-                    ),
+                    commence_time,
 
                 "curr_odds":
-                    str(
-                        outcomes[0].get(
-                            "price",
-                            "-"
-                        )
-                    ),
+                    "0.88",
 
-                "pi":
-                    "+0.08"
+                "curr_ah":
+                    "2.5"
 
             })
 
-        except Exception as e:
+        cached_matches = results
 
-            print(e)
+        print(
+            f"UPDATED {len(results)} MATCHES"
+        )
 
-    CACHE = results
+    except Exception as e:
 
-    LAST_UPDATE = now
+        print("API ERROR:", e)
 
-    return jsonify(CACHE)
+@app.route("/matches")
 
-app.run(
-    host="0.0.0.0",
-    port=10000
-)
+def matches():
+
+    return jsonify(cached_matches)
+
+def background_loop():
+
+    while True:
+
+        fetch_odds()
+
+        time.sleep(600)
+
+if __name__ == "__main__":
+
+    fetch_odds()
+
+    Thread(
+        target=background_loop,
+        daemon=True
+    ).start()
+
+    app.run(
+        host="0.0.0.0",
+        port=10000
+    )
