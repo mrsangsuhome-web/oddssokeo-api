@@ -91,6 +91,15 @@ def fetch_odds():
 
         print("API ERROR:", e)
 
+@app.route("/")
+
+def home():
+
+    return jsonify({
+        "status": "running",
+        "matches": len(cached_matches)
+    })
+
 @app.route("/matches")
 
 def matches():
@@ -103,7 +112,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(600)
+        time.sleep(900)
 
 if __name__ == "__main__":
 
@@ -118,3 +127,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
+
