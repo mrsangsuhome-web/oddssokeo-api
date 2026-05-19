@@ -9,11 +9,12 @@ CORS(app)
 
 API_KEY = "6073d49f9663c2f28a4b82dc1dfb002d"
 
-SPORTS = [
-    "soccer_epl",
-    "soccer_uefa_nations_league",
-    "soccer_brazil_campeonato"
-]
+SPORTS = [ 
+"soccer_usa_mls",
+ "soccer_brazil_campeonato", 
+ "soccer_spain_la_liga", 
+ "soccer_germany_bundesliga"
+ ]
 
 cached_matches = []
 
@@ -31,7 +32,7 @@ def fetch_odds():
 
             params = {
                 "apiKey": API_KEY,
-                "regions": "uk",
+                "regions": "eu",
                 "markets": "spreads",
                 "oddsFormat": "decimal"
             }
