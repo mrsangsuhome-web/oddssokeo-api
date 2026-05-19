@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 
+import requests
 import os
 import time
 
@@ -8,151 +9,177 @@ app = Flask(__name__)
 
 CORS(app)
 
-# =========================================
-# ROOT
-# =========================================
+API_KEY = os.getenv(
+    "API_KEY"
+)
+
+CACHE = []
+
+LAST_UPDATE = 0
+
+UPDATE_INTERVAL = 180
+
+LEAGUES = [
+
+    "soccer_epl"
+
+]
 
 @app.route("/")
+
 def home():
 
-    return jsonify({
+    return {
 
-        "service": "Asian Market Scanner",
+        "status":
+            "scanner online"
 
-        "status": "online"
-
-    })
-
-# =========================================
-# MATCHES
-# =========================================
+    }
 
 @app.route("/matches")
+
 def matches():
 
-    matches = [
+    global CACHE
+    global LAST_UPDATE
 
-        {
-            "league": "China U20 League",
+    now = time.time()
 
-            "match": "Shandong U20 vs Shaanxi Union U20",
+    if (
+        now - LAST_UPDATE
+        < UPDATE_INTERVAL
+    ):
 
-            "open_ah": "-0.25",
+        return jsonify(CACHE)
 
-            "curr_ah": "-0.75",
+    all_matches = []
 
-            "open_odds": 2.009,
+    for league in LEAGUES:
 
-            "curr_odds": 1.934,
-        },
+        try:
 
-        {
-            "league": "China U20 League",
+            url = (
 
-            "match": "Shanghai Port U20 vs Beijing Guoan U20",
+                f"https://api.the-odds-api.com/v4/sports/"
+                f"{league}/odds/?apiKey={API_KEY}"
+                f"&regions=eu"
+                f"&markets=spreads,totals"
 
-            "open_ah": "+0.25",
+            )
 
-            "curr_ah": "-0.5",
+            response = requests.get(
 
-            "open_odds": 1.884,
+                url,
 
-            "curr_odds": 1.793,
-        },
+                timeout=20
 
-        {
-            "league": "International Friendly U20",
+            )
 
-            "match": "Turkmenistan U20 vs Uzbekistan U20",
+            data = response.json()
 
-            "open_ah": "+1.25",
+            for match in data:
 
-            "curr_ah": "+1.5",
+                try:
 
-            "open_odds": 1.862,
+                    bookmakers = (
+                        match.get(
+                            "bookmakers",
+                            []
+                        )
+                    )
 
-            "curr_odds": 1.925,
-        },
+                    if not bookmakers:
+                        continue
 
-        {
-            "league": "Australia FFA Cup",
+                    first_book = (
+                        bookmakers[0]
+                    )
 
-            "match": "Rochedale Rovers FC vs Capalaba FC",
+                    markets = (
+                        first_book.get(
+                            "markets",
+                            []
+                        )
+                    )
 
-            "open_ah": "-1.75",
+                    if not markets:
+                        continue
 
-            "curr_ah": "-2.25",
+                    first_market = (
+                        markets[0]
+                    )
 
-            "open_odds": 1.746,
+                    outcomes = (
+                        first_market.get(
+                            "outcomes",
+                            []
+                        )
+                    )
 
-            "curr_odds": 1.813,
-        }
+                    if len(outcomes) < 2:
+                        continue
 
-    ]
+                    all_matches.append({
 
-    data = []
+                        "match":
+                            f"{match['home_team']} vs {match['away_team']}",
 
-    for item in matches:
+                        "league":
+                            "EPL",
 
-        open_odds = item["open_odds"]
+                        "open_ah":
+                            str(
+                                outcomes[0].get(
+                                    "point",
+                                    "-"
+                                )
+                            ),
 
-        curr_odds = item["curr_odds"]
+                        "curr_ah":
+                            str(
+                                outcomes[0].get(
+                                    "point",
+                                    "-"
+                                )
+                            ),
 
-        pi = round(
-            curr_odds - open_odds,
-            2
-        )
+                        "open_odds":
+                            outcomes[0].get(
+                                "price",
+                                "-"
+                            ),
 
-        trend = "↑" if pi > 0 else "↓"
+                        "curr_odds":
+                            str(
+                                outcomes[0].get(
+                                    "price",
+                                    "-"
+                                )
+                            ),
 
-        row = {
+                        "pi":
+                            "+0.08"
 
-            "league": item["league"],
+                    })
 
-            "match": item["match"],
+                except Exception as e:
 
-            "open_ah": item["open_ah"],
+                    print(e)
 
-            "curr_ah": item["curr_ah"],
+        except Exception as e:
 
-            "open_odds": round(open_odds, 3),
+            print(e)
 
-            "curr_odds": f"{curr_odds:.3f}{trend}",
+    CACHE = all_matches
 
-            "pi": f"{pi:+.2f}"
+    LAST_UPDATE = now
 
-        }
+    return jsonify(CACHE)
 
-        data.append(row)
+app.run(
 
-    return jsonify(data)
+    host="0.0.0.0",
 
-# =========================================
-# HEALTH
-# =========================================
+    port=10000
 
-@app.route("/health")
-def health():
-
-    return jsonify({
-
-        "status": "healthy",
-
-        "time": int(time.time())
-
-    })
-
-# =========================================
-# RUN
-# =========================================
-
-if __name__ == "__main__":
-
-    port = int(
-        os.environ.get("PORT", 10000)
-    )
-
-    app.run(
-        host="0.0.0.0",
-        port=port
-    )
+)
