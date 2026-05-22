@@ -299,10 +299,7 @@ def fetch_odds():
                     bookA = real_books[0]
                     bookB = real_books[0]
 
-                else:
-
-                    bookA = "PIN"
-                    bookB = "365"
+                else: bookA, bookB = random.sample( DEFAULT_BOOKMAKERS, 2 )
 
                 base = round(
                     random.uniform(0.84, 0.96),
