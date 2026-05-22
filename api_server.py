@@ -264,7 +264,13 @@ def build_market(
 
         }
 
-    except Exception:
+    except Exception as e:
+
+        print(
+            "BUILD ERROR:",
+            e
+        )
+
         return None
 
 def fetch_odds():
@@ -297,7 +303,10 @@ def fetch_odds():
                     "spreads,totals",
 
                 "oddsFormat":
-                    "decimal"
+                    "decimal",
+
+                "bookmakers":
+                    "pinnacle,bet365,williamhill,unibet"
 
             }
 
@@ -311,7 +320,19 @@ def fetch_odds():
 
             )
 
+            print(
+                "SPORT:",
+                sport,
+                "STATUS:",
+                response.status_code
+            )
+
             if response.status_code != 200:
+
+                print(
+                    response.text
+                )
+
                 continue
 
             data = response.json()
@@ -320,6 +341,11 @@ def fetch_odds():
                 data,
                 list
             ):
+
+                print(
+                    "INVALID DATA"
+                )
+
                 continue
 
             for game in data:
@@ -362,7 +388,7 @@ def fetch_odds():
                 for i in range(
 
                     min(
-                        5,
+                        3,
                         len(bookmakers) - 1
                     )
 
@@ -467,7 +493,13 @@ def fetch_odds():
                                     parsed
                                 )
 
-                    except:
+                    except Exception as e:
+
+                        print(
+                            "PARSE ERROR:",
+                            e
+                        )
+
                         continue
 
         results = sorted(
@@ -543,6 +575,29 @@ def fetch_odds():
             e
         )
 
+        if os.path.exists(
+            CACHE_FILE
+        ):
+
+            with open(
+                CACHE_FILE,
+                "r"
+            ) as f:
+
+                cache = json.load(
+                    f
+                )
+
+                cached_matches = cache.get(
+                    "matches",
+                    []
+                )
+
+                bookmaker_stats = cache.get(
+                    "books",
+                    []
+                )
+
 @app.route("/")
 
 def home():
@@ -555,6 +610,11 @@ def home():
         "matches":
             len(
                 cached_matches
+            ),
+
+        "bookmakers":
+            len(
+                bookmaker_stats
             )
 
     })
