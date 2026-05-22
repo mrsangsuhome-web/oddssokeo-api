@@ -111,13 +111,13 @@ def clean_team_name(name):
         .strip()
     )
 
-def asian_price():
+def realistic_asian_price():
 
     value = round(
 
         random.uniform(
-            0.78,
-            0.99
+            0.86,
+            0.94
         ),
 
         2
@@ -132,13 +132,13 @@ def asian_price():
 
 def signal_from_gap(gap):
 
-    if gap >= 0.18:
+    if gap >= 0.07:
         return "SHARP"
 
-    if gap >= 0.12:
+    if gap >= 0.04:
         return "VALUE"
 
-    if gap >= 0.05:
+    if gap >= 0.02:
         return "WATCH"
 
     return "NORMAL"
@@ -181,6 +181,73 @@ def random_books():
         )
 
     return bookA, bookB
+
+def generate_market_data():
+
+    awayA = realistic_asian_price()
+
+    homeA = round(
+        1.80 - awayA,
+        2
+    )
+
+    drift = round(
+
+        random.uniform(
+            -0.07,
+            0.07
+        ),
+
+        2
+
+    )
+
+    awayB = round(
+        awayA + drift,
+        2
+    )
+
+    if awayB < 0.80:
+        awayB = 0.80
+
+    if awayB > 0.99:
+        awayB = 0.99
+
+    homeB = round(
+        1.80 - awayB,
+        2
+    )
+
+    away_gap = abs(
+        awayA - awayB
+    )
+
+    home_gap = abs(
+        homeA - homeB
+    )
+
+    gap = round(
+
+        max(
+            away_gap,
+            home_gap
+        ),
+
+        2
+
+    )
+
+    return {
+
+        "awayA": awayA,
+        "homeA": homeA,
+
+        "awayB": awayB,
+        "homeB": homeB,
+
+        "gap": gap
+
+    }
 
 def fetch_odds():
 
@@ -251,34 +318,10 @@ def fetch_odds():
 
                 bookA, bookB = random_books()
 
-                oddA_main = asian_price()
-                oddA_alt = asian_price()
-
-                oddB_main = asian_price()
-                oddB_alt = asian_price()
-
-                gap = round(
-
-                    max(
-
-                        abs(
-                            oddA_main -
-                            oddB_main
-                        ),
-
-                        abs(
-                            oddA_alt -
-                            oddB_alt
-                        )
-
-                    ),
-
-                    2
-
-                )
+                market_data = generate_market_data()
 
                 signal = signal_from_gap(
-                    gap
+                    market_data["gap"]
                 )
 
                 results.append({
@@ -307,19 +350,29 @@ def fetch_odds():
                         bookB,
 
                     "awayOddA":
-                        oddA_main,
+                        market_data[
+                            "awayA"
+                        ],
 
                     "homeOddA":
-                        oddA_alt,
+                        market_data[
+                            "homeA"
+                        ],
 
                     "awayOddB":
-                        oddB_main,
+                        market_data[
+                            "awayB"
+                        ],
 
                     "homeOddB":
-                        oddB_alt,
+                        market_data[
+                            "homeB"
+                        ],
 
                     "gap":
-                        gap,
+                        market_data[
+                            "gap"
+                        ],
 
                     "signal":
                         signal,
