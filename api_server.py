@@ -1,4 +1,4 @@
-```python
+
 import requests
 import time
 import json
@@ -247,7 +247,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(1800)
+        time.sleep(180)
 
 if __name__ == "__main__":
 
@@ -262,4 +262,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-```
+
