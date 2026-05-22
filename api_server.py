@@ -1,4 +1,4 @@
-
+```python
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -10,7 +10,6 @@ import os
 
 from threading import Thread
 from dotenv import load_dotenv
-
 from datetime import datetime, timezone
 
 load_dotenv()
@@ -28,35 +27,20 @@ cached_matches = []
 SPORTS = [
 
     "soccer_epl",
-
     "soccer_usa_mls",
-
     "soccer_spain_la_liga",
-
     "soccer_germany_bundesliga",
-
     "soccer_italy_serie_a",
-
     "soccer_france_ligue_one",
-
     "soccer_portugal_primeira_liga",
-
     "soccer_netherlands_eredivisie",
-
     "soccer_turkey_super_lig",
-
     "soccer_brazil_campeonato",
-
     "soccer_argentina_primera_division",
-
     "soccer_japan_j_league",
-
     "soccer_korea_kleague1",
-
     "soccer_australia_aleague",
-
     "soccer_uefa_champs_league",
-
     "soccer_fifa_world_cup"
 
 ]
@@ -64,38 +48,74 @@ SPORTS = [
 LEAGUE_MAP = {
 
     "SOCCER_EPL": "EPL",
-
     "SOCCER_USA_MLS": "MLS",
-
     "SOCCER_SPAIN_LA_LIGA": "LAL",
-
     "SOCCER_GERMANY_BUNDESLIGA": "BUN",
-
     "SOCCER_ITALY_SERIE_A": "SA",
-
     "SOCCER_FRANCE_LIGUE_ONE": "L1",
-
     "SOCCER_PORTUGAL_PRIMEIRA_LIGA": "POR",
-
     "SOCCER_NETHERLANDS_EREDIVISIE": "NED",
-
     "SOCCER_TURKEY_SUPER_LIG": "TUR",
-
     "SOCCER_BRAZIL_CAMPEONATO": "BRA",
-
     "SOCCER_ARGENTINA_PRIMERA_DIVISION": "ARG",
-
     "SOCCER_JAPAN_J_LEAGUE": "JPN",
-
     "SOCCER_KOREA_KLEAGUE1": "KOR",
-
     "SOCCER_AUSTRALIA_ALEAGUE": "AUS",
-
     "SOCCER_UEFA_CHAMPS_LEAGUE": "UCL",
-
     "SOCCER_FIFA_WORLD_CUP": "WC"
 
 }
+
+BOOKMAKER_MAP = {
+
+    "PINNACLE": "PIN",
+    "BET365": "365",
+    "188BET": "188",
+    "SBOBET": "SBO",
+    "IBCBET": "IBC",
+    "CMD368": "CMD",
+    "SABA SPORTS": "SABA",
+    "BETINASIA": "BTI",
+    "ISN": "ISN",
+    "MAXBET": "MAX",
+    "CROWN": "CRN",
+    "M8BET": "M8",
+    "1XBET": "1X",
+    "BETFAIR": "BFA",
+    "MELBET": "MLB",
+    "FUN88": "FUN",
+    "WILLIAM HILL": "WH",
+    "UNIBET": "UNI",
+    "10BET": "10B",
+    "BETWAY": "BTW",
+    "DAFABET": "DFB",
+    "PADDYPOWER": "PAD",
+    "MANSION": "MAN",
+    "BOVADA": "BVD",
+    "MARATHONBET": "MRB",
+    "BETVICTOR": "BTV",
+    "888SPORT": "888",
+    "SPORTINGBET": "SPB",
+    "COMEON": "COM",
+    "YSB88": "YSB"
+
+}
+
+
+def normalize_bookmaker(name):
+
+    if not name:
+        return None
+
+    upper_name = name.upper()
+
+    for key, short in BOOKMAKER_MAP.items():
+
+        if key in upper_name:
+
+            return short
+
+    return upper_name[:6]
 
 
 def generate_live_data(commence_time):
@@ -117,109 +137,48 @@ def generate_live_data(commence_time):
         if diff < 0:
 
             return {
-
                 "liveStatus": "PRE",
-
                 "minute": None,
-
                 "injury": None
-
             }
 
         if diff <= 45:
 
             return {
-
                 "liveStatus": "H1",
-
                 "minute": diff,
-
                 "injury": random.randint(0, 4)
-
             }
 
         if diff <= 60:
 
             return {
-
                 "liveStatus": "HT",
-
                 "minute": 45,
-
                 "injury": 0
-
             }
 
         if diff <= 110:
 
             return {
-
                 "liveStatus": "H2",
-
                 "minute": diff - 15,
-
                 "injury": random.randint(0, 5)
-
             }
 
         return {
-
             "liveStatus": "FIN",
-
             "minute": 90,
-
             "injury": 0
-
         }
 
     except:
 
         return {
-
             "liveStatus": "PRE",
-
             "minute": None,
-
             "injury": None
-
         }
-
-
-def normalize_bookmaker(name):
-
-    if not name:
-        return None
-
-    name = name.upper()
-
-    if "PINNACLE" in name:
-        return "PIN"
-
-    if "BET365" in name:
-        return "365"
-
-    if "188" in name:
-        return "188"
-
-    if "SBO" in name:
-        return "SBO"
-
-    if "IBC" in name:
-        return "IBC"
-
-    if "CMD" in name:
-        return "CMD"
-
-    if "SABA" in name:
-        return "SABA"
-
-    if "BETINASIA" in name:
-        return "BTI"
-
-    if "ISN" in name:
-        return "ISN"
-
-    return name[:6]
 
 
 def fetch_odds():
@@ -231,9 +190,7 @@ def fetch_odds():
     try:
 
         headers = {
-
             "X-API-Key": API_KEY
-
         }
 
         for SPORT in SPORTS:
@@ -244,13 +201,9 @@ def fetch_odds():
             )
 
             response = requests.get(
-
                 url,
-
                 headers=headers,
-
                 timeout=20
-
             )
 
             if response.status_code != 200:
@@ -289,8 +242,7 @@ def fetch_odds():
 
                     title = b.get("title")
 
-                    normalized =
-                        normalize_bookmaker(title)
+                   normalized = normalize_bookmaker(title)
 
                     if normalized:
 
@@ -312,7 +264,6 @@ def fetch_odds():
                 elif len(real_books) == 1:
 
                     bookA = real_books[0]
-
                     bookB = real_books[0]
 
                 else:
@@ -325,15 +276,10 @@ def fetch_odds():
                 )
 
                 movement = random.choice([
-
                     -0.02,
-
                     -0.01,
-
                     0.01,
-
                     0.02
-
                 ])
 
                 awayOddA = round(base, 2)
@@ -361,29 +307,18 @@ def fetch_odds():
                 )
 
                 market = random.choice([
-
                     "FT O/U",
-
                     "FT HDP"
-
                 ])
 
                 line = random.choice([
-
                     "0.5",
-
                     "1",
-
                     "1.5",
-
                     "2",
-
                     "2.5",
-
                     "2.5/3",
-
                     "3"
-
                 ])
 
                 liveData = generate_live_data(
@@ -466,10 +401,7 @@ def fetch_odds():
 
     except Exception as e:
 
-        print(
-            "API ERROR:",
-            e
-        )
+        print("API ERROR:", e)
 
         if os.path.exists(
             CACHE_FILE
@@ -482,9 +414,7 @@ def fetch_odds():
 
                 cached_matches = json.load(f)
 
-            print(
-                "USING CACHE DATA"
-            )
+            print("USING CACHE DATA")
 
 
 @app.route("/")
@@ -531,4 +461,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-
+```
