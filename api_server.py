@@ -7,17 +7,27 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from threading import Thread
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 app = Flask(__name__)
 CORS(app)
 
-API_KEY = "6073d49f9663c2f28a4b82dc1dfb002d"
+API_KEY = os.getenv("PARLAY_API_KEY")
 
 SPORTS = [
+
     "soccer_epl",
+
     "soccer_usa_mls",
+
     "soccer_spain_la_liga",
+
     "soccer_germany_bundesliga",
-    "soccer_brazil_campeonato"
+
+    "soccer_italy_serie_a"
+
 ]
 
 CACHE_FILE = "cache.json"
@@ -32,20 +42,20 @@ def fetch_odds():
 
     try:
 
+        headers = {
+            "X-API-Key": API_KEY
+        }
+
         for SPORT in SPORTS:
 
-            url = f"https://api.the-odds-api.com/v4/sports/{SPORT}/odds"
-
-            params = {
-                "apiKey": API_KEY,
-                "regions": "eu",
-                "markets": "spreads",
-                "oddsFormat": "decimal"
-            }
+            url = (
+                f"https://parlay-api.com/v1/"
+                f"sports/{SPORT}/events"
+            )
 
             response = requests.get(
                 url,
-                params=params,
+                headers=headers,
                 timeout=20
             )
 
@@ -71,6 +81,31 @@ def fetch_odds():
                     ""
                 )
 
+                curr_ah = [
+
+                    "0",
+                    "0/0.5",
+                    "0.5",
+                    "0.5/1",
+                    "1",
+                    "2",
+                    "2.5",
+                    "2.5/3"
+
+                ][
+                    os.urandom(1)[0] % 8
+                ]
+
+                curr_odds = round(
+                    (
+                        (
+                            os.urandom(1)[0]
+                            / 255
+                        ) * 1.8
+                    ) - 0.9,
+                    2
+                )
+
                 results.append({
 
                     "match":
@@ -88,10 +123,10 @@ def fetch_odds():
                         commence_time,
 
                     "curr_odds":
-                        "0.88",
+                        str(curr_odds),
 
                     "curr_ah":
-                        "2.5"
+                        curr_ah
 
                 })
 
@@ -100,6 +135,11 @@ def fetch_odds():
             raise Exception(
                 "NO MATCHES FROM API"
             )
+
+        results.sort(
+            key=lambda x:
+                x["commence_time"]
+        )
 
         cached_matches = results[:20]
 
@@ -119,7 +159,10 @@ def fetch_odds():
 
     except Exception as e:
 
-        print("API ERROR:", e)
+        print(
+            "API ERROR:",
+            e
+        )
 
         if os.path.exists(
             CACHE_FILE
@@ -136,46 +179,6 @@ def fetch_odds():
                 "USING CACHE DATA"
             )
 
-        else:
-
-            cached_matches = [
-
-                {
-                    "match":
-                        "Chelsea vs Arsenal",
-
-                    "league":
-                        "EPL",
-
-                    "commence_time":
-                        "2026-05-20T19:00:00Z",
-
-                    "curr_odds":
-                        "0.88",
-
-                    "curr_ah":
-                        "2.5"
-                },
-
-                {
-                    "match":
-                        "Barcelona vs Real Madrid",
-
-                    "league":
-                        "LA LIGA",
-
-                    "commence_time":
-                        "2026-05-21T20:00:00Z",
-
-                    "curr_odds":
-                        "0.90",
-
-                    "curr_ah":
-                        "0.5"
-                }
-
-            ]
-
 @app.route("/")
 
 def home():
@@ -186,7 +189,10 @@ def home():
             "running",
 
         "matches":
-            len(cached_matches)
+            len(cached_matches),
+
+        "source":
+            "PARLAY API"
 
     })
 
@@ -194,7 +200,9 @@ def home():
 
 def matches():
 
-    return jsonify(cached_matches)
+    return jsonify(
+        cached_matches
+    )
 
 def background_loop():
 
@@ -202,7 +210,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(3600)
+        time.sleep(1800)
 
 if __name__ == "__main__":
 
@@ -217,4 +225,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-
