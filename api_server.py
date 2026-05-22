@@ -15,7 +15,8 @@ CHAT_ID = "@sokeoscanner_bot"
 
 
 SPORTS = [
-ENGLISH_PREMIER_LEAGUE",
+
+    "ENGLISH_PREMIER_LEAGUE",
 
     "SPAIN_LA_LIGA",
 
