@@ -82,7 +82,6 @@ SPORTS = [
 
     "soccer_australia_aleague"
 
-]
 
 ]
 
