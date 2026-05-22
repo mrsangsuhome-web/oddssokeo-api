@@ -2,6 +2,7 @@ import requests
 import time
 import json
 import os
+
 from collections import Counter
 
 from flask import Flask, jsonify
@@ -90,13 +91,13 @@ def clean_team_name(name):
 
 def asian_gap_signal(gap):
 
-    if gap >= 0.07:
+    if gap >= 0.05:
         return "SHARP"
 
-    if gap >= 0.04:
+    if gap >= 0.03:
         return "VALUE"
 
-    if gap >= 0.02:
+    if gap >= 0.015:
         return "WATCH"
 
     return "NORMAL"
@@ -137,8 +138,9 @@ def build_market(
 
         drift = round(
 
-            (
-                oddA1 * 0.03
+            random.uniform(
+                -0.03,
+                0.03
             ),
 
             2
@@ -157,6 +159,12 @@ def build_market(
 
         if oddB1 > 0.99:
             oddB1 = 0.99
+
+        if oddB1 < 0.80:
+            oddB1 = 0.80
+
+        if oddB2 > 0.99:
+            oddB2 = 0.99
 
         if oddB2 < 0.80:
             oddB2 = 0.80
@@ -241,7 +249,7 @@ def build_market(
 
         }
 
-    except:
+    except Exception:
         return None
 
 def fetch_odds():
@@ -254,13 +262,6 @@ def fetch_odds():
     book_counter = Counter()
 
     try:
-
-        headers = {
-
-            "X-API-Key":
-                API_KEY
-
-        }
 
         for sport in SPORTS:
 
@@ -344,31 +345,29 @@ def fetch_odds():
                     continue
 
                 for i in range(
+
                     min(
                         5,
                         len(bookmakers) - 1
                     )
+
                 ):
 
                     try:
 
-                        bookA =
-                            bookmakers[i]
+                        bookA = bookmakers[i]
 
-                        bookB =
-                            bookmakers[i + 1]
+                        bookB = bookmakers[i + 1]
 
-                        nameA =
-                            bookA.get(
-                                "title",
-                                "BOOKA"
-                            )
+                        nameA = bookA.get(
+                            "title",
+                            "BOOKA"
+                        )
 
-                        nameB =
-                            bookB.get(
-                                "title",
-                                "BOOKB"
-                            )
+                        nameB = bookB.get(
+                            "title",
+                            "BOOKB"
+                        )
 
                         book_counter[
                             short_name(nameA)
@@ -378,77 +377,72 @@ def fetch_odds():
                             short_name(nameB)
                         ] += 1
 
-                        marketsA =
-                            bookA.get(
-                                "markets",
-                                []
-                            )
+                        marketsA = bookA.get(
+                            "markets",
+                            []
+                        )
 
                         for market in marketsA:
 
-                            key =
-                                market.get(
-                                    "key",
-                                    ""
-                                )
+                            key = market.get(
+                                "key",
+                                ""
+                            )
 
-                            outcomes =
-                                market.get(
-                                    "outcomes",
-                                    []
-                                )
+                            outcomes = market.get(
+                                "outcomes",
+                                []
+                            )
 
                             if key == "spreads":
 
-                                parsed =
-                                    build_market(
+                                parsed = build_market(
 
-                                        "FT HDP",
+                                    "FT HDP",
 
-                                        outcomes,
+                                    outcomes,
 
-                                        nameA,
+                                    nameA,
 
-                                        nameB,
+                                    nameB,
 
-                                        sport
-                                        .replace(
-                                            "soccer_",
-                                            ""
-                                        )
-                                        .upper(),
-
-                                        match,
-
-                                        commence_time
-
+                                    sport
+                                    .replace(
+                                        "soccer_",
+                                        ""
                                     )
+                                    .upper(),
+
+                                    match,
+
+                                    commence_time
+
+                                )
 
                             elif key == "totals":
 
-                                parsed =
-                                    build_market(
+                                parsed = build_market(
 
-                                        "FT O/U",
+                                    "FT O/U",
 
-                                        outcomes,
+                                    outcomes,
 
-                                        nameA,
+                                    nameA,
 
-                                        nameB,
+                                    nameB,
 
-                                        sport
-                                        .replace(
-                                            "soccer_",
-                                            ""
-                                        )
-                                        .upper(),
-
-                                        match,
-
-                                        commence_time
-
+                                    sport
+                                    .replace(
+                                        "soccer_",
+                                        ""
                                     )
+                                    .upper(),
+
+                                    match,
+
+                                    commence_time
+
+                                )
 
                             else:
 
@@ -460,7 +454,7 @@ def fetch_odds():
                                     parsed
                                 )
 
-                    except:
+                    except Exception:
                         continue
 
         results = sorted(
@@ -512,6 +506,7 @@ def fetch_odds():
         ) as f:
 
             json.dump(
+
                 {
                     "matches":
                         cached_matches,
@@ -519,7 +514,9 @@ def fetch_odds():
                     "books":
                         bookmaker_stats
                 },
+
                 f
+
             )
 
         print(
@@ -602,6 +599,8 @@ def background_loop():
         time.sleep(20)
 
 if __name__ == "__main__":
+
+    import random
 
     fetch_odds()
 
