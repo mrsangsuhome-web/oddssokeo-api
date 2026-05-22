@@ -1,4 +1,4 @@
-```python
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -188,7 +188,7 @@ def generate_live_data(commence_time):
 def normalize_bookmaker(name):
 
     if not name:
-        return "BOOK"
+        return None
 
     name = name.upper()
 
@@ -289,11 +289,18 @@ def fetch_odds():
 
                     title = b.get("title")
 
-                    if title:
+                    normalized =
+                        normalize_bookmaker(title)
+
+                    if normalized:
 
                         real_books.append(
-                            normalize_bookmaker(title)
+                            normalized
                         )
+
+                real_books = list(
+                    set(real_books)
+                )
 
                 if len(real_books) >= 2:
 
@@ -302,21 +309,15 @@ def fetch_odds():
                         2
                     )
 
+                elif len(real_books) == 1:
+
+                    bookA = real_books[0]
+
+                    bookB = real_books[0]
+
                 else:
 
-                    bookA, bookB = random.sample(
-                        [
-                            "SBO",
-                            "PIN",
-                            "IBC",
-                            "188",
-                            "CMD",
-                            "SABA",
-                            "BTI",
-                            "ISN"
-                        ],
-                        2
-                    )
+                    continue
 
                 base = round(
                     random.uniform(0.84, 0.96),
@@ -530,4 +531,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-```
+
