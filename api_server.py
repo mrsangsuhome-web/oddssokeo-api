@@ -52,7 +52,9 @@ SPORTS = [
 
     "soccer_australia_aleague",
 
-    "soccer_uefa_champs_league"
+    "soccer_uefa_champs_league",
+
+    "soccer_fifa_world_cup"
 
 ]
 
@@ -86,7 +88,9 @@ LEAGUE_MAP = {
 
     "SOCCER_AUSTRALIA_ALEAGUE": "AUS",
 
-    "SOCCER_UEFA_CHAMPS_LEAGUE": "UCL"
+    "SOCCER_UEFA_CHAMPS_LEAGUE": "UCL",
+
+    "SOCCER_FIFA_WORLD_CUP": "WC"
 
 }
 
@@ -170,6 +174,18 @@ def normalize_bookmaker(name):
     if "IBC" in name:
         return "IBC"
 
+    if "CMD" in name:
+        return "CMD"
+
+    if "SABA" in name:
+        return "SABA"
+
+    if "BETINASIA" in name:
+        return "BTI"
+
+    if "ISN" in name:
+        return "ISN"
+
     return name[:6]
 
 
@@ -203,6 +219,9 @@ def fetch_odds():
                 timeout=20
 
             )
+
+            if response.status_code != 200:
+                continue
 
             data = response.json()
 
@@ -266,15 +285,22 @@ def fetch_odds():
                     2
                 )
 
-                gap = round(
-                    random.uniform(0.01, 0.05),
-                    2
-                )
+                movement = random.choice([
+
+                    -0.02,
+
+                    -0.01,
+
+                    0.01,
+
+                    0.02
+
+                ])
 
                 awayOddA = round(base, 2)
 
                 awayOddB = round(
-                    base + gap,
+                    base + movement,
                     2
                 )
 
@@ -285,6 +311,13 @@ def fetch_odds():
 
                 homeOddB = round(
                     random.uniform(0.84, 0.96),
+                    2
+                )
+
+                gap = round(
+                    abs(
+                        awayOddA - awayOddB
+                    ),
                     2
                 )
 
@@ -441,7 +474,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(1800)
+        time.sleep(8)
 
 
 if __name__ == "__main__":
