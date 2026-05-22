@@ -1,3 +1,4 @@
+```python
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -9,6 +10,8 @@ import os
 
 from threading import Thread
 from dotenv import load_dotenv
+
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -95,25 +98,81 @@ LEAGUE_MAP = {
 }
 
 
-def generate_live_data():
+def generate_live_data(commence_time):
 
-    status = random.choice([
+    try:
 
-        "PRE",
+        match_time = datetime.fromisoformat(
+            commence_time.replace("Z", "+00:00")
+        )
 
-        "PRE",
+        now = datetime.now(timezone.utc)
 
-        "PRE",
+        diff = int(
+            (
+                now - match_time
+            ).total_seconds() / 60
+        )
 
-        "H1",
+        if diff < 0:
 
-        "H2",
+            return {
 
-        "HT"
+                "liveStatus": "PRE",
 
-    ])
+                "minute": None,
 
-    if status == "PRE":
+                "injury": None
+
+            }
+
+        if diff <= 45:
+
+            return {
+
+                "liveStatus": "H1",
+
+                "minute": diff,
+
+                "injury": random.randint(0, 4)
+
+            }
+
+        if diff <= 60:
+
+            return {
+
+                "liveStatus": "HT",
+
+                "minute": 45,
+
+                "injury": 0
+
+            }
+
+        if diff <= 110:
+
+            return {
+
+                "liveStatus": "H2",
+
+                "minute": diff - 15,
+
+                "injury": random.randint(0, 5)
+
+            }
+
+        return {
+
+            "liveStatus": "FIN",
+
+            "minute": 90,
+
+            "injury": 0
+
+        }
+
+    except:
 
         return {
 
@@ -124,32 +183,6 @@ def generate_live_data():
             "injury": None
 
         }
-
-    if status == "HT":
-
-        return {
-
-            "liveStatus": "HT",
-
-            "minute": 45,
-
-            "injury": 0
-
-        }
-
-    minute = random.randint(1, 45)
-
-    injury = random.randint(0, 4)
-
-    return {
-
-        "liveStatus": status,
-
-        "minute": minute,
-
-        "injury": injury
-
-    }
 
 
 def normalize_bookmaker(name):
@@ -238,6 +271,11 @@ def fetch_odds():
                 away_team = game.get(
                     "away_team",
                     "AWAY"
+                )
+
+                commence_time = game.get(
+                    "commence_time",
+                    ""
                 )
 
                 bookmakers = game.get(
@@ -347,7 +385,9 @@ def fetch_odds():
 
                 ])
 
-                liveData = generate_live_data()
+                liveData = generate_live_data(
+                    commence_time
+                )
 
                 results.append({
 
@@ -490,3 +530,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
+```
