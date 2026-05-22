@@ -1,260 +1,178 @@
-import requests
-import time
-import json
-import os
-import random
-
-from collections import Counter
-
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from threading import Thread
-from dotenv import load_dotenv
 
-load_dotenv()
+import random
+import time
+import requests
 
 app = Flask(__name__)
+
 CORS(app)
 
-API_KEY = os.getenv(
-    "PARLAY_API_KEY"
-)
+BOT_TOKEN = "8925919932:AAE_CN7NRn9JCbtknc9RqwXdzc9xqfGpG6g"
 
-CACHE_FILE = "cache.json"
+CHAT_ID = "@sokeoscanner_bot"
 
-cached_matches = []
-
-bookmaker_stats = []
 
 SPORTS = [
+ENGLISH_PREMIER_LEAGUE",
 
-    "soccer_epl",
+    "SPAIN_LA_LIGA",
 
-    "soccer_uefa_champs_league",
+    "ITALY_SERIE_A",
 
-    "soccer_uefa_europa_league",
+    "GERMANY_BUNDESLIGA",
 
-    "soccer_spain_la_liga",
+    "FRANCE_LIGUE_ONE",
 
-    "soccer_spain_segunda_division",
+    "BELGIUM_FIRST_DIV",
 
-    "soccer_italy_serie_a",
+    "USA_MLS",
 
-    "soccer_italy_serie_b",
+    "PORTUGAL_PRIMEIRA_LIGA",
 
-    "soccer_germany_bundesliga",
+    "NETHERLANDS_EREDIVISIE",
 
-    "soccer_germany_bundesliga2",
+    "TURKEY_SUPER_LIG",
 
-    "soccer_france_ligue_one",
+    "SCOTLAND_PREMIERSHIP",
 
-    "soccer_france_ligue_two",
+    "SWISS_SUPER_LEAGUE",
 
-    "soccer_netherlands_eredivisie",
+    "AUSTRIA_BUNDESLIGA",
 
-    "soccer_portugal_primeira_liga",
+    "DENMARK_SUPERLIGA",
 
-    "soccer_turkey_super_league",
+    "NORWAY_ELITESERIEN",
 
-    "soccer_belgium_first_div",
+    "SWEDEN_ALLSVENSKAN",
 
-    "soccer_sweden_allsvenskan",
+    "BRAZIL_SERIE_A",
 
-    "soccer_norway_eliteserien",
+    "ARGENTINA_PRIMERA",
 
-    "soccer_denmark_superliga",
+    "MEXICO_LIGA_MX",
 
-    "soccer_brazil_campeonato",
+    "JAPAN_J_LEAGUE",
 
-    "soccer_argentina_primera_division",
+    "KOREA_K_LEAGUE",
 
-    "soccer_usa_mls",
+    "CHINA_SUPER_LEAGUE",
 
-    "soccer_mexico_ligamx",
+    "AUSTRALIA_A_LEAGUE",
 
-    "soccer_japan_j_league",
+    "SAUDI_PRO_LEAGUE",
 
-    "soccer_korea_kleague1",
+    "QATAR_STARS_LEAGUE",
 
-    "soccer_china_superleague",
+    "UAE_PRO_LEAGUE",
 
-    "soccer_australia_aleague"
+    "UEFA_CHAMPIONS_LEAGUE",
+
+    "UEFA_EUROPA_LEAGUE",
+
+    "UEFA_CONFERENCE_LEAGUE",
+
+    "FIFA_CLUB_WORLD_CUP"
 
 
 ]
 
-BOOKMAKER_SHORT = {
 
-    "Pinnacle": "PIN",
+BOOKMAKERS = [
 
-    "Bet365": "365",
+    "SBO",
 
-    "188Bet": "188",
+    "PIN",
 
-    "SBOBet": "SBO",
+    "IBC",
 
-    "IBCBet": "IBC",
+    "188",
 
-    "CMD368": "CMD",
+    "CMD",
 
-    "Betfair": "BTF",
+    "SABA",
 
-    "Matchbook": "MBK",
+    "BTI",
 
-    "ISN": "ISN",
+    "KSP",
 
-    "BTI": "BTI",
+    "ISN"
 
-    "SABA": "SABA",
+]
 
-    "KSport": "KSP"
 
-}
+MATCHES = [
 
-def short_name(name):
+    ("Liverpool", "Arsenal"),
 
-    return BOOKMAKER_SHORT.get(
-        name,
-        name[:4].upper()
-    )
+    ("Chelsea", "Manchester City"),
 
-def clean_team_name(name):
+    ("Real Madrid", "Barcelona"),
 
-    return (
-        name
-        .replace(" FC", "")
-        .replace(" CF", "")
-        .replace(" SC", "")
-        .replace(".", "")
-        .strip()
-    )
+    ("AC Milan", "Inter"),
 
-def convert_to_asian(price):
+    ("PSG", "Marseille"),
 
-    try:
+    ("Bayern", "Dortmund"),
 
-        value = round(
-            float(price) - 1,
-            2
-        )
+    ("Juventus", "Napoli"),
 
-        if value < 0.80:
-            value = 0.80
+    ("Atletico Madrid", "Sevilla"),
 
-        if value > 0.99:
-            value = 0.99
+    ("Ajax", "PSV"),
 
-        return value
+    ("LA Galaxy", "Inter Miami")
 
-    except:
-        return 0.90
+]
 
-def asian_gap_signal(gap):
 
-    if gap >= 0.05:
-        return "SHARP"
+def generate_live_time():
 
-    if gap >= 0.03:
-        return "VALUE"
+    status = random.choice([
 
-    if gap >= 0.015:
-        return "WATCH"
+        "H1",
 
-    return "NORMAL"
+        "H2",
 
-def generate_fake_gap(price):
+        "HT",
 
-    drift = round(
+        "PRE"
 
-        random.uniform(
-            -0.03,
-            0.03
-        ),
+    ])
 
-        2
+    if status == "PRE":
 
-    )
+        return "PRE"
 
-    value = round(
-        price + drift,
-        2
-    )
+    if status == "HT":
 
-    if value < 0.80:
-        value = 0.80
+        return "HT"
 
-    if value > 0.99:
-        value = 0.99
+    minute = random.randint(1, 45)
 
-    return value
+    extra = random.randint(0, 4)
 
-def build_market(
+    if extra > 0:
 
-    bookA,
-    bookB,
-    league,
-    match,
-    commence_time
+        return f"{status} {minute}+{extra}'"
 
-):
+    return f"{status} {minute}'"
 
-    oddA1 = round(
 
-        random.uniform(
-            0.86,
-            0.94
-        ),
+def generate_match():
 
-        2
+    home, away = random.choice(MATCHES)
 
-    )
+    market = random.choice([
 
-    oddA2 = round(
-        1.80 - oddA1,
-        2
-    )
+        "FT O/U",
 
-    oddB1 = generate_fake_gap(
-        oddA1
-    )
+        "FT HDP"
 
-    oddB2 = round(
-        1.80 - oddB1,
-        2
-    )
-
-    gap = round(
-
-        max(
-
-            abs(
-                oddA1 - oddB1
-            ),
-
-            abs(
-                oddA2 - oddB2
-            )
-
-        ),
-
-        2
-
-    )
-
-    signal = asian_gap_signal(
-        gap
-    )
-
-    market_type = random.choice([
-        "FT HDP",
-        "FT O/U"
     ])
 
     line = random.choice([
-
-        "0",
-
-        "0/0.5",
 
         "0.5",
 
@@ -266,397 +184,194 @@ def build_market(
 
         "2.5",
 
-        "2.5/3"
+        "2.5/3",
+
+        "3"
 
     ])
 
+    base = round(
+
+        random.uniform(0.84, 0.96),
+
+        2
+
+    )
+
+    gap = round(
+
+        random.uniform(0.01, 0.06),
+
+        2
+
+    )
+
+    awayA = round(base, 2)
+
+    awayB = round(base + gap, 2)
+
+    homeA = round(
+
+        random.uniform(0.84, 0.96),
+
+        2
+
+    )
+
+    homeB = round(
+
+        random.uniform(0.84, 0.96),
+
+        2
+
+    )
+
+    bookA, bookB = random.sample(
+
+        BOOKMAKERS,
+
+        2
+
+    )
+
     return {
 
-    "match":
-        match,
+        "match": f"{home} vs {away}",
 
-    "league":
-        league,
+        "league": random.choice(SPORTS),
 
-    "market":
-        market_type,
+        "market": market,
 
-    "line":
-        line,
+        "line": line,
 
-    "bookA":
-        short_name(
-            bookA
-        ),
+        "bookA": bookA,
 
-    "bookB":
-        short_name(
-            bookB
-        ),
+        "bookB": bookB,
 
-    "awayOddA":
-        oddA1,
+        "awayOddA": awayA,
 
-    "homeOddA":
-        oddA2,
+        "awayOddB": awayB,
 
-    "awayOddB":
-        oddB1,
+        "homeOddA": homeA,
 
-    "homeOddB":
-        oddB2,
+        "homeOddB": homeB,
 
-    "gap":
-        gap,
+        "gap": gap,
 
-    "signal":
-        signal,
+        "live": True,
 
-    "commence_time":
-        commence_time,
+        "liveTime": generate_live_time(),
 
-    "live":
-        random.choice([
-            True,
-            False
-        ]),
+        "timestamp": int(time.time())
 
-    "liveTime":
-        random.choice([
+    }
 
-            "H1 4'",
-
-            "H1 15'",
-
-            "H1 28'",
-
-            "H1 45+2'",
-
-            "HT",
-
-            "H2 51'",
-
-            "H2 67'",
-
-            "H2 79'",
-
-            "H2 90+2'"
-
-        ])
-
-}
-
-def fetch_odds():
-
-    global cached_matches
-    global bookmaker_stats
-
-    results = []
-
-    book_counter = Counter()
-
-    try:
-
-        headers = {
-
-            "X-API-Key":
-                API_KEY
-
-        }
-
-        for sport in SPORTS:
-
-            url = (
-                "https://parlay-api.com"
-                f"/v1/sports/{sport}/events"
-            )
-
-            response = requests.get(
-
-                url,
-
-                headers=headers,
-
-                timeout=20
-
-            )
-
-            print(
-                "SPORT:",
-                sport,
-                "STATUS:",
-                response.status_code
-            )
-
-            if response.status_code != 200:
-
-                print(
-                    response.text
-                )
-
-                continue
-
-            data = response.json()
-
-            if not isinstance(
-                data,
-                list
-            ):
-
-                continue
-
-            for game in data:
-
-                home_team = clean_team_name(
-
-                    game.get(
-                        "home_team",
-                        "HOME"
-                    )
-
-                )
-
-                away_team = clean_team_name(
-
-                    game.get(
-                        "away_team",
-                        "AWAY"
-                    )
-
-                )
-
-                match = (
-                    f"{home_team} vs {away_team}"
-                )
-
-                commence_time = game.get(
-                    "commence_time",
-                    ""
-                )
-
-                books = [
-
-                    "PIN",
-
-                    "SBO",
-
-                    "IBC",
-
-                    "188",
-
-                    "CMD",
-
-                    "BTI",
-
-                    "SABA",
-
-                    "KSP"
-
-                ]
-
-                for i in range(2):
-
-                    bookA = random.choice(
-                        books
-                    )
-
-                    bookB = random.choice(
-                        books
-                    )
-
-                    while bookA == bookB:
-
-                        bookB = random.choice(
-                            books
-                        )
-
-                    parsed = build_market(
-
-                        bookA,
-
-                        bookB,
-
-                        sport
-                        .replace(
-                            "soccer_",
-                            ""
-                        )
-                        .upper(),
-
-                        match,
-
-                        commence_time
-
-                    )
-
-                    results.append(
-                        parsed
-                    )
-
-                    book_counter[
-                        bookA
-                    ] += 1
-
-                    book_counter[
-                        bookB
-                    ] += 1
-
-        results = sorted(
-
-            results,
-
-            key=lambda x:
-                (
-                    -x["gap"],
-                    x["commence_time"]
-                )
-
-        )
-
-        cached_matches = results[:120]
-
-        top_books = book_counter.most_common(5)
-
-        bookmaker_stats = []
-
-        for name, count in top_books:
-
-            bookmaker_stats.append({
-
-                "name":
-                    name,
-
-                "matches":
-                    count,
-
-                "live":
-                    int(
-                        count * 0.25
-                    ),
-
-                "prematch":
-                    int(
-                        count * 0.75
-                    ),
-
-                "latency":
-                    f"{random.randint(80, 900)}ms"
-
-            })
-
-        with open(
-            CACHE_FILE,
-            "w"
-        ) as f:
-
-            json.dump(
-
-                {
-                    "matches":
-                        cached_matches,
-
-                    "books":
-                        bookmaker_stats
-                },
-
-                f
-
-            )
-
-        print(
-            f"UPDATED {len(cached_matches)} MATCHES"
-        )
-
-    except Exception as e:
-
-        print(
-            "API ERROR:",
-            e
-        )
-
-        if os.path.exists(
-            CACHE_FILE
-        ):
-
-            with open(
-                CACHE_FILE,
-                "r"
-            ) as f:
-
-                cache = json.load(
-                    f
-                )
-
-                cached_matches = cache.get(
-                    "matches",
-                    []
-                )
-
-                bookmaker_stats = cache.get(
-                    "books",
-                    []
-                )
-
-                print(
-                    "USING CACHE DATA"
-                )
 
 @app.route("/")
-
-def home():
+def root():
 
     return jsonify({
 
-        "status":
-            "running",
+        "status": "running",
 
-        "matches":
-            len(
-                cached_matches
-            ),
+        "matches": 20,
 
-        "bookmakers":
-            len(
-                bookmaker_stats
-            )
+        "bookmakers": len(BOOKMAKERS)
 
     })
 
-@app.route("/matches")
 
+@app.route("/matches")
 def matches():
 
-    return jsonify(
-        cached_matches
+    data = [
+
+        generate_match()
+
+        for _ in range(20)
+
+    ]
+
+    data = sorted(
+
+        data,
+
+        key=lambda x: x["gap"],
+
+        reverse=True
+
     )
 
-@app.route("/bookmakers")
+    return jsonify(data)
 
-def bookmakers():
 
-    return jsonify(
-        bookmaker_stats
-    )
+@app.route("/send_telegram", methods=["POST"])
+def send_telegram():
 
-def background_loop():
+    try:
 
-    while True:
+        data = request.json
 
-        fetch_odds()
+        message = data.get(
 
-        time.sleep(60)
+            "message",
+
+            ""
+
+        )
+
+        if not message:
+
+            return jsonify({
+
+                "success": False,
+
+                "error": "Empty message"
+
+            })
+
+        url = (
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        )
+
+        payload = {
+
+            "chat_id": CHAT_ID,
+
+            "text": message
+
+        }
+
+        r = requests.post(
+
+            url,
+
+            json=payload,
+
+            timeout=10
+
+        )
+
+        return jsonify({
+
+            "success": True,
+
+            "telegram": r.json()
+
+        })
+
+    except Exception as e:
+
+        return jsonify({
+
+            "success": False,
+
+            "error": str(e)
+
+        })
+
 
 if __name__ == "__main__":
-
-    fetch_odds()
-
-    Thread(
-
-        target=background_loop,
-
-        daemon=True
-
-    ).start()
 
     app.run(
 
