@@ -1,7 +1,9 @@
+```python
 import requests
 import time
 import json
 import os
+import random
 
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -59,6 +61,15 @@ def fetch_odds():
                 timeout=20
             )
 
+            if response.status_code != 200:
+
+                print(
+                    f"API FAILED {SPORT}",
+                    response.status_code
+                )
+
+                continue
+
             data = response.json()
 
             if not isinstance(data, list):
@@ -81,7 +92,7 @@ def fetch_odds():
                     ""
                 )
 
-                curr_ah = [
+                curr_ah = random.choice([
 
                     "0",
                     "0/0.5",
@@ -92,18 +103,21 @@ def fetch_odds():
                     "2.5",
                     "2.5/3"
 
-                ][
-                    os.urandom(1)[0] % 8
-                ]
+                ])
 
-                curr_odds = round(
-                    (
-                        (
-                            os.urandom(1)[0]
-                            / 255
-                        ) * 1.8
-                    ) - 0.9,
-                    2
+                curr_odds = str(
+
+                    round(
+
+                        random.uniform(
+                            -0.92,
+                            0.92
+                        ),
+
+                        2
+
+                    )
+
                 )
 
                 results.append({
@@ -123,7 +137,7 @@ def fetch_odds():
                         commence_time,
 
                     "curr_odds":
-                        str(curr_odds),
+                        curr_odds,
 
                     "curr_ah":
                         curr_ah
@@ -179,6 +193,29 @@ def fetch_odds():
                 "USING CACHE DATA"
             )
 
+        else:
+
+            cached_matches = [
+
+                {
+                    "match":
+                        "Liverpool vs Arsenal",
+
+                    "league":
+                        "EPL",
+
+                    "commence_time":
+                        "2026-05-24T15:00:00Z",
+
+                    "curr_odds":
+                        "0.42",
+
+                    "curr_ah":
+                        "2.5"
+                }
+
+            ]
+
 @app.route("/")
 
 def home():
@@ -225,3 +262,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
+```
