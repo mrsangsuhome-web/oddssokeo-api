@@ -14,23 +14,41 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-API_KEY = os.getenv("PARLAY_API_KEY")
+API_KEY = os.getenv(
+    "PARLAY_API_KEY"
+)
+
+CACHE_FILE = "cache.json"
+
+cached_matches = []
 
 SPORTS = [
 
     "soccer_epl",
 
-    "soccer_usa_mls",
+    "soccer_uefa_champs_league",
 
     "soccer_spain_la_liga",
 
-    "soccer_italy_serie_a"
+    "soccer_italy_serie_a",
+
+    "soccer_germany_bundesliga",
+
+    "soccer_france_ligue_one",
+
+    "soccer_netherlands_eredivisie",
+
+    "soccer_portugal_primeira_liga",
+
+    "soccer_turkey_super_league",
+
+    "soccer_brazil_campeonato",
+
+    "soccer_argentina_primera_division",
+
+    "soccer_usa_mls"
 
 ]
-
-CACHE_FILE = "cache.json"
-
-cached_matches = []
 
 BOOKMAKERS = [
 
@@ -56,7 +74,7 @@ BOOKMAKERS = [
 
 ]
 
-LINES = [
+HDP_LINES = [
 
     "0",
 
@@ -70,11 +88,21 @@ LINES = [
 
     "1/1.5",
 
-    "1.5",
+    "1.5"
+
+]
+
+OU_LINES = [
 
     "2",
 
-    "2.5"
+    "2/2.5",
+
+    "2.5",
+
+    "2.5/3",
+
+    "3"
 
 ]
 
@@ -83,33 +111,82 @@ def clean_team_name(name):
     return (
         name
         .replace(" FC", "")
-        .replace(" SC", "")
         .replace(" CF", "")
+        .replace(" SC", "")
         .replace(".", "")
         .strip()
     )
 
 def asian_price():
 
-    return round(
+    value = round(
 
-        random.choice([
-
-            0.82,
-            0.84,
-            0.86,
-            0.88,
-            0.90,
-            0.92,
-            0.94,
-            0.96,
-            0.98
-
-        ]),
+        random.uniform(
+            0.78,
+            0.99
+        ),
 
         2
 
     )
+
+    if value >= 1:
+
+        value = 0.99
+
+    return value
+
+def build_market():
+
+    market = random.choice([
+        "FT HDP",
+        "FT O/U"
+    ])
+
+    if market == "FT HDP":
+
+        line = random.choice(
+            HDP_LINES
+        )
+
+    else:
+
+        line = random.choice(
+            OU_LINES
+        )
+
+    return market, line
+
+def signal_from_gap(gap):
+
+    if gap >= 0.18:
+        return "SHARP"
+
+    if gap >= 0.12:
+        return "VALUE"
+
+    if gap >= 0.05:
+        return "WATCH"
+
+    return "NORMAL"
+
+def generate_books():
+
+    bookA = random.choice(
+        BOOKMAKERS
+    )
+
+    bookB = random.choice(
+        BOOKMAKERS
+    )
+
+    while bookA == bookB:
+
+        bookB = random.choice(
+            BOOKMAKERS
+        )
+
+    return bookA, bookB
 
 def fetch_odds():
 
@@ -120,80 +197,88 @@ def fetch_odds():
     try:
 
         headers = {
-            "X-API-Key": API_KEY
+
+            "X-API-Key":
+                API_KEY
+
         }
 
         for SPORT in SPORTS:
 
             url = (
-                f"https://parlay-api.com/v1/"
-                f"sports/{SPORT}/events"
+                "https://parlay-api.com"
+                f"/v1/sports/{SPORT}/events"
             )
 
             response = requests.get(
+
                 url,
+
                 headers=headers,
+
                 timeout=20
+
             )
 
             if response.status_code != 200:
+
+                print(
+                    f"FAILED {SPORT}"
+                )
+
                 continue
 
             data = response.json()
 
-            if not isinstance(data, list):
+            if not isinstance(
+                data,
+                list
+            ):
+
                 continue
 
             for game in data:
 
                 home_team = clean_team_name(
+
                     game.get(
                         "home_team",
                         "HOME"
                     )
+
                 )
 
                 away_team = clean_team_name(
+
                     game.get(
                         "away_team",
                         "AWAY"
                     )
+
                 )
 
-                line = random.choice(
-                    LINES
-                )
+                market, line = build_market()
 
-                bookA = random.choice(
-                    BOOKMAKERS
-                )
+                bookA, bookB = generate_books()
 
-                bookB = random.choice(
-                    BOOKMAKERS
-                )
+                sideA_main = asian_price()
+                sideA_alt = asian_price()
 
-                while bookA == bookB:
-
-                    bookB = random.choice(
-                        BOOKMAKERS
-                    )
-
-                awayA = asian_price()
-                homeA = asian_price()
-
-                awayB = asian_price()
-                homeB = asian_price()
+                sideB_main = asian_price()
+                sideB_alt = asian_price()
 
                 gap = round(
 
                     max(
 
                         abs(
-                            awayA - awayB
+                            sideA_main -
+                            sideB_main
                         ),
 
                         abs(
-                            homeA - homeB
+                            sideA_alt -
+                            sideB_alt
                         )
 
                     ),
@@ -202,23 +287,25 @@ def fetch_odds():
 
                 )
 
-                signal = "NORMAL"
-
-                if gap >= 0.12:
-
-                    signal = "VALUE"
-
-                if gap >= 0.18:
-
-                    signal = "SHARP"
+                signal = signal_from_gap(
+                    gap
+                )
 
                 results.append({
 
                     "match":
                         f"{home_team} vs {away_team}",
 
+                    "league":
+                        SPORT
+                        .replace(
+                            "soccer_",
+                            ""
+                        )
+                        .upper(),
+
                     "market":
-                        "FT HDP",
+                        market,
 
                     "line":
                         line,
@@ -230,16 +317,16 @@ def fetch_odds():
                         bookB,
 
                     "awayOddA":
-                        awayA,
+                        sideA_main,
 
                     "homeOddA":
-                        homeA,
+                        sideA_alt,
 
                     "awayOddB":
-                        awayB,
+                        sideB_main,
 
                     "homeOddB":
-                        homeB,
+                        sideB_alt,
 
                     "gap":
                         gap,
@@ -255,7 +342,16 @@ def fetch_odds():
 
                 })
 
-        cached_matches = results[:20]
+        results = sorted(
+
+            results,
+
+            key=lambda x:
+                x["commence_time"]
+
+        )
+
+        cached_matches = results[:60]
 
         with open(
             CACHE_FILE,
@@ -287,7 +383,9 @@ def fetch_odds():
                 "r"
             ) as f:
 
-                cached_matches = json.load(f)
+                cached_matches = json.load(
+                    f
+                )
 
 @app.route("/")
 
@@ -299,7 +397,9 @@ def home():
             "running",
 
         "matches":
-            len(cached_matches)
+            len(
+                cached_matches
+            )
 
     })
 
@@ -317,18 +417,24 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(60)
+        time.sleep(20)
 
 if __name__ == "__main__":
 
     fetch_odds()
 
     Thread(
+
         target=background_loop,
+
         daemon=True
+
     ).start()
 
     app.run(
+
         host="0.0.0.0",
+
         port=10000
+
     )
