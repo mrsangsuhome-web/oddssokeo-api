@@ -7,7 +7,6 @@ import random
 from flask import Flask, jsonify
 from flask_cors import CORS
 from threading import Thread
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,8 +24,6 @@ SPORTS = [
 
     "soccer_spain_la_liga",
 
-    "soccer_germany_bundesliga",
-
     "soccer_italy_serie_a"
 
 ]
@@ -34,6 +31,52 @@ SPORTS = [
 CACHE_FILE = "cache.json"
 
 cached_matches = []
+
+BOOKMAKERS = [
+
+    "Pinnacle",
+
+    "Bet365",
+
+    "188Bet",
+
+    "SBOBet",
+
+    "CMD368",
+
+    "IBCBet",
+
+    "ISN",
+
+    "BTI",
+
+    "SABA",
+
+    "KSport"
+
+]
+
+LINES = [
+
+    "0",
+
+    "0/0.5",
+
+    "0.5",
+
+    "0.5/1",
+
+    "1",
+
+    "1/1.5",
+
+    "1.5",
+
+    "2",
+
+    "2.5"
+
+]
 
 def clean_team_name(name):
 
@@ -43,10 +86,29 @@ def clean_team_name(name):
         .replace(" SC", "")
         .replace(" CF", "")
         .replace(".", "")
-        .replace("Montréal", "Montreal")
-        .replace("Atlético", "Atletico")
-        .replace("Deportivo ", "")
         .strip()
+    )
+
+def asian_price():
+
+    return round(
+
+        random.choice([
+
+            0.82,
+            0.84,
+            0.86,
+            0.88,
+            0.90,
+            0.92,
+            0.94,
+            0.96,
+            0.98
+
+        ]),
+
+        2
+
     )
 
 def fetch_odds():
@@ -75,12 +137,6 @@ def fetch_odds():
             )
 
             if response.status_code != 200:
-
-                print(
-                    f"API FAILED {SPORT}",
-                    response.status_code
-                )
-
                 continue
 
             data = response.json()
@@ -91,110 +147,113 @@ def fetch_odds():
             for game in data:
 
                 home_team = clean_team_name(
-
                     game.get(
                         "home_team",
                         "HOME"
                     )
-
                 )
 
                 away_team = clean_team_name(
-
                     game.get(
                         "away_team",
                         "AWAY"
                     )
-
                 )
 
-                commence_time = game.get(
-                    "commence_time",
-                    ""
+                line = random.choice(
+                    LINES
                 )
 
-                curr_ah = random.choice([
+                bookA = random.choice(
+                    BOOKMAKERS
+                )
 
-                    "0",
-                    "0/0.5",
-                    "0.5",
-                    "0.5/1",
-                    "1",
-                    "2",
-                    "2.5",
-                    "2.5/3"
+                bookB = random.choice(
+                    BOOKMAKERS
+                )
 
-                ])
+                while bookA == bookB:
 
-                curr_odds = str(
-
-                    round(
-
-                        random.uniform(
-                            -1.25,
-                            1.25
-                        ),
-
-                        2
-
+                    bookB = random.choice(
+                        BOOKMAKERS
                     )
 
+                awayA = asian_price()
+                homeA = asian_price()
+
+                awayB = asian_price()
+                homeB = asian_price()
+
+                gap = round(
+
+                    max(
+
+                        abs(
+                            awayA - awayB
+                        ),
+
+                        abs(
+                            homeA - homeB
+                        )
+
+                    ),
+
+                    2
+
                 )
+
+                signal = "NORMAL"
+
+                if gap >= 0.12:
+
+                    signal = "VALUE"
+
+                if gap >= 0.18:
+
+                    signal = "SHARP"
 
                 results.append({
 
                     "match":
                         f"{home_team} vs {away_team}",
 
-                    "league":
-                        SPORT
-                        .replace(
-                            "soccer_",
-                            ""
-                        )
-                        .upper(),
+                    "market":
+                        "FT HDP",
+
+                    "line":
+                        line,
+
+                    "bookA":
+                        bookA,
+
+                    "bookB":
+                        bookB,
+
+                    "awayOddA":
+                        awayA,
+
+                    "homeOddA":
+                        homeA,
+
+                    "awayOddB":
+                        awayB,
+
+                    "homeOddB":
+                        homeB,
+
+                    "gap":
+                        gap,
+
+                    "signal":
+                        signal,
 
                     "commence_time":
-                        commence_time,
-
-                    "curr_odds":
-                        curr_odds,
-
-                    "curr_ah":
-                        curr_ah
+                        game.get(
+                            "commence_time",
+                            ""
+                        )
 
                 })
-
-        unique_matches = []
-
-        seen = set()
-
-        for item in results:
-
-            key = (
-                item["match"]
-                .lower()
-                .strip()
-            )
-
-            if key not in seen:
-
-                seen.add(key)
-
-                unique_matches.append(item)
-
-        results = unique_matches
-
-        if len(results) == 0:
-
-            raise Exception(
-                "NO MATCHES FROM API"
-            )
-
-        results.sort(
-            key=lambda x:
-                x["commence_time"]
-        )
 
         cached_matches = results[:20]
 
@@ -230,33 +289,6 @@ def fetch_odds():
 
                 cached_matches = json.load(f)
 
-            print(
-                "USING CACHE DATA"
-            )
-
-        else:
-
-            cached_matches = [
-
-                {
-                    "match":
-                        "Liverpool vs Arsenal",
-
-                    "league":
-                        "EPL",
-
-                    "commence_time":
-                        "2026-05-24T15:00:00Z",
-
-                    "curr_odds":
-                        "0.42",
-
-                    "curr_ah":
-                        "2.5"
-                }
-
-            ]
-
 @app.route("/")
 
 def home():
@@ -267,10 +299,7 @@ def home():
             "running",
 
         "matches":
-            len(cached_matches),
-
-        "source":
-            "PARLAY API"
+            len(cached_matches)
 
     })
 
