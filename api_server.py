@@ -77,20 +77,24 @@ BOOKMAKER_MAP = {
     "SABA SPORTS": "SABA",
     "BETINASIA": "BTI",
     "ISN": "ISN",
-    "MAXBET": "MAX",
-    "CROWN": "CRN",
-    "M8BET": "M8",
-    "1XBET": "1X",
-    "BETFAIR": "BFA",
-    "MELBET": "MLB",
-    "FUN88": "FUN",
-    "WILLIAM HILL": "WH",
-    "UNIBET": "UNI",
-    "10BET": "10B",
-    "BETWAY": "BTW",
-    "DAFABET": "DFB"
+    "MAXBET": "MAX"
 
 }
+
+DEFAULT_BOOKMAKERS = [
+
+    "PIN",
+    "365",
+    "188",
+    "SBO",
+    "IBC",
+    "CMD",
+    "SABA",
+    "BTI",
+    "ISN",
+    "MAX"
+
+]
 
 
 def normalize_bookmaker(name):
@@ -136,9 +140,9 @@ def generate_live_data(commence_time):
                 "displayTime":
                     local_time.strftime("%d/%m • %H:%M"),
 
-                "minute": None,
+                "minute": 0,
 
-                "injury": None
+                "injury": 0
 
             }
 
@@ -202,11 +206,11 @@ def generate_live_data(commence_time):
 
             "liveStatus": "PRE",
 
-            "displayTime": "--:--",
+            "displayTime": "--/-- • --:--",
 
-            "minute": None,
+            "minute": 0,
 
-            "injury": None
+            "injury": 0
 
         }
 
@@ -240,9 +244,6 @@ def fetch_odds():
                 continue
 
             data = response.json()
-
-            print("SPORT:", SPORT)
-            print("TOTAL:", len(data))
 
             if not isinstance(data, list):
                 continue
@@ -294,19 +295,12 @@ def fetch_odds():
                         2
                     )
 
-                elif len(real_books) == 1:
-
-                    bookA = real_books[0]
-                    bookB = real_books[0]
-
-                
                 else:
 
-                   bookA, bookB = random.sample(
-                   DEFAULT_BOOKMAKERS,
-                       2
-                   )
-
+                    bookA, bookB = random.sample(
+                        DEFAULT_BOOKMAKERS,
+                        2
+                    )
 
                 base = round(
                     random.uniform(0.84, 0.96),
@@ -371,14 +365,14 @@ def fetch_odds():
                     "league":
                         LEAGUE_MAP.get(
                             SPORT.upper(),
-                            SPORT.upper()
+                            "EPL"
                         ),
 
                     "market":
-                        market,
+                        market or "FT HDP",
 
                     "line":
-                        line,
+                        line or "1.5",
 
                     "bookA":
                         bookA,
@@ -387,19 +381,19 @@ def fetch_odds():
                         bookB,
 
                     "awayOddA":
-                        awayOddA,
+                        awayOddA or 0.91,
 
                     "awayOddB":
-                        awayOddB,
+                        awayOddB or 0.92,
 
                     "homeOddA":
-                        homeOddA,
+                        homeOddA or 0.89,
 
                     "homeOddB":
-                        homeOddB,
+                        homeOddB or 0.88,
 
                     "gap":
-                        gap,
+                        gap or 0.02,
 
                     "liveStatus":
                         liveData["liveStatus"],
@@ -408,10 +402,10 @@ def fetch_odds():
                         liveData["displayTime"],
 
                     "minute":
-                        liveData["minute"],
+                        liveData.get("minute", 0),
 
                     "injury":
-                        liveData["injury"],
+                        liveData.get("injury", 0),
 
                     "timestamp":
                         int(time.time())
