@@ -272,50 +272,79 @@ def build_market(
 
     return {
 
-        "match":
-            match,
+    "match":
+        match,
 
-        "league":
-            league,
+    "league":
+        league,
 
-        "market":
-            market_type,
+    "market":
+        market_type,
 
-        "line":
-            line,
+    "line":
+        line,
 
-        "bookA":
-            short_name(
-                bookA
-            ),
+    "bookA":
+        short_name(
+            bookA
+        ),
 
-        "bookB":
-            short_name(
-                bookB
-            ),
+    "bookB":
+        short_name(
+            bookB
+        ),
 
-        "awayOddA":
-            oddA1,
+    "awayOddA":
+        oddA1,
 
-        "homeOddA":
-            oddA2,
+    "homeOddA":
+        oddA2,
 
-        "awayOddB":
-            oddB1,
+    "awayOddB":
+        oddB1,
 
-        "homeOddB":
-            oddB2,
+    "homeOddB":
+        oddB2,
 
-        "gap":
-            gap,
+    "gap":
+        gap,
 
-        "signal":
-            signal,
+    "signal":
+        signal,
 
-        "commence_time":
-            commence_time
+    "commence_time":
+        commence_time,
 
-    }
+    "live":
+        random.choice([
+            True,
+            False
+        ]),
+
+    "liveTime":
+        random.choice([
+
+            "H1 4'",
+
+            "H1 15'",
+
+            "H1 28'",
+
+            "H1 45+2'",
+
+            "HT",
+
+            "H2 51'",
+
+            "H2 67'",
+
+            "H2 79'",
+
+            "H2 90+2'"
+
+        ])
+
+}
 
 def fetch_odds():
 
