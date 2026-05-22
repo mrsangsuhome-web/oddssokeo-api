@@ -134,7 +134,7 @@ def generate_live_data(commence_time):
                 "liveStatus": "PRE",
 
                 "displayTime":
-                    local_time.strftime("%H:%M"),
+                    local_time.strftime("%d/%m • %H:%M"),
 
                 "minute": None,
 
@@ -501,3 +501,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
+
