@@ -300,13 +300,10 @@ def fetch_odds():
                     "eu",
 
                 "markets":
-                    "spreads,totals",
+                    "h2h",
 
                 "oddsFormat":
-                    "decimal",
-
-                "bookmakers":
-                    "pinnacle,bet365,williamhill,unibet"
+                    "decimal"
 
             }
 
@@ -437,36 +434,11 @@ def fetch_odds():
 
                             parsed = None
 
-                            if key == "spreads":
+                            if key == "h2h":
 
                                 parsed = build_market(
 
-                                    "FT HDP",
-
-                                    outcomes,
-
-                                    nameA,
-
-                                    nameB,
-
-                                    sport
-                                    .replace(
-                                        "soccer_",
-                                        ""
-                                    )
-                                    .upper(),
-
-                                    match,
-
-                                    commence_time
-
-                                )
-
-                            elif key == "totals":
-
-                                parsed = build_market(
-
-                                    "FT O/U",
+                                    "FT H2H",
 
                                     outcomes,
 
@@ -641,7 +613,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(20)
+        time.sleep(60)
 
 if __name__ == "__main__":
 
