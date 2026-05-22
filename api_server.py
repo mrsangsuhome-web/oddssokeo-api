@@ -88,16 +88,7 @@ BOOKMAKER_MAP = {
     "UNIBET": "UNI",
     "10BET": "10B",
     "BETWAY": "BTW",
-    "DAFABET": "DFB",
-    "PADDYPOWER": "PAD",
-    "MANSION": "MAN",
-    "BOVADA": "BVD",
-    "MARATHONBET": "MRB",
-    "BETVICTOR": "BTV",
-    "888SPORT": "888",
-    "SPORTINGBET": "SPB",
-    "COMEON": "COM",
-    "YSB88": "YSB"
+    "DAFABET": "DFB"
 
 }
 
@@ -134,8 +125,6 @@ def generate_live_data(commence_time):
             ).total_seconds() / 60
         )
 
-        # CHƯA ĐÁ
-
         if diff < -5:
 
             local_time = match_time.astimezone()
@@ -153,8 +142,6 @@ def generate_live_data(commence_time):
 
             }
 
-        # HIỆP 1
-
         if diff <= 45:
 
             return {
@@ -169,8 +156,6 @@ def generate_live_data(commence_time):
 
             }
 
-        # HT
-
         if diff <= 60:
 
             return {
@@ -184,8 +169,6 @@ def generate_live_data(commence_time):
                 "injury": 0
 
             }
-
-        # HIỆP 2
 
         if diff <= 110:
 
@@ -258,6 +241,9 @@ def fetch_odds():
 
             data = response.json()
 
+            print("SPORT:", SPORT)
+            print("TOTAL:", len(data))
+
             if not isinstance(data, list):
                 continue
 
@@ -315,7 +301,8 @@ def fetch_odds():
 
                 else:
 
-                    continue
+                    bookA = "PIN"
+                    bookB = "365"
 
                 base = round(
                     random.uniform(0.84, 0.96),
@@ -427,13 +414,16 @@ def fetch_odds():
 
                 })
 
-        results.sort(
+        cached_matches = sorted(
+
+            results,
+
             key=lambda x:
                 x["timestamp"],
-            reverse=True
-        )
 
-        cached_matches = results[:20]
+            reverse=True
+
+        )[:20]
 
         with open(
             CACHE_FILE,
@@ -511,4 +501,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-
