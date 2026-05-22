@@ -28,19 +28,61 @@ bookmaker_stats = []
 
 SPORTS = [
 
+    SPORTS = [
+
     "soccer_epl",
 
     "soccer_uefa_champs_league",
 
+    "soccer_uefa_europa_league",
+
     "soccer_spain_la_liga",
+
+    "soccer_spain_segunda_division",
 
     "soccer_italy_serie_a",
 
+    "soccer_italy_serie_b",
+
     "soccer_germany_bundesliga",
+
+    "soccer_germany_bundesliga2",
 
     "soccer_france_ligue_one",
 
-    "soccer_usa_mls"
+    "soccer_france_ligue_two",
+
+    "soccer_netherlands_eredivisie",
+
+    "soccer_portugal_primeira_liga",
+
+    "soccer_turkey_super_league",
+
+    "soccer_belgium_first_div",
+
+    "soccer_sweden_allsvenskan",
+
+    "soccer_norway_eliteserien",
+
+    "soccer_denmark_superliga",
+
+    "soccer_brazil_campeonato",
+
+    "soccer_argentina_primera_division",
+
+    "soccer_usa_mls",
+
+    "soccer_mexico_ligamx",
+
+    "soccer_japan_j_league",
+
+    "soccer_korea_kleague1",
+
+    "soccer_china_superleague",
+
+    "soccer_australia_aleague"
+
+]
 
 ]
 
@@ -123,10 +165,34 @@ def asian_gap_signal(gap):
 
     return "NORMAL"
 
+def generate_fake_gap(price):
+
+    drift = round(
+
+        random.uniform(
+            -0.03,
+            0.03
+        ),
+
+        2
+
+    )
+
+    value = round(
+        price + drift,
+        2
+    )
+
+    if value < 0.80:
+        value = 0.80
+
+    if value > 0.99:
+        value = 0.99
+
+    return value
+
 def build_market(
 
-    market_key,
-    outcomes,
     bookA,
     bookB,
     league,
@@ -135,143 +201,124 @@ def build_market(
 
 ):
 
-    if len(outcomes) < 2:
-        return None
+    oddA1 = round(
 
-    try:
+        random.uniform(
+            0.86,
+            0.94
+        ),
 
-        side1 = outcomes[0]
-        side2 = outcomes[1]
+        2
 
-        oddA1 = convert_to_asian(
-            side1.get(
-                "price",
-                1.91
-            )
-        )
+    )
 
-        oddA2 = convert_to_asian(
-            side2.get(
-                "price",
-                1.91
-            )
-        )
+    oddA2 = round(
+        1.80 - oddA1,
+        2
+    )
 
-        drift = round(
+    oddB1 = generate_fake_gap(
+        oddA1
+    )
 
-            random.uniform(
-                -0.03,
-                0.03
+    oddB2 = round(
+        1.80 - oddB1,
+        2
+    )
+
+    gap = round(
+
+        max(
+
+            abs(
+                oddA1 - oddB1
             ),
 
-            2
+            abs(
+                oddA2 - oddB2
+            )
 
-        )
+        ),
 
-        oddB1 = round(
-            oddA1 + drift,
-            2
-        )
+        2
 
-        oddB2 = round(
-            oddA2 - drift,
-            2
-        )
+    )
 
-        if oddB1 < 0.80:
-            oddB1 = 0.80
+    signal = asian_gap_signal(
+        gap
+    )
 
-        if oddB1 > 0.99:
-            oddB1 = 0.99
+    market_type = random.choice([
+        "FT HDP",
+        "FT O/U"
+    ])
 
-        if oddB2 < 0.80:
-            oddB2 = 0.80
+    line = random.choice([
 
-        if oddB2 > 0.99:
-            oddB2 = 0.99
+        "0",
 
-        gap = round(
+        "0/0.5",
 
-            max(
+        "0.5",
 
-                abs(
-                    oddA1 - oddB1
-                ),
+        "1",
 
-                abs(
-                    oddA2 - oddB2
-                )
+        "1.5",
 
+        "2",
+
+        "2.5",
+
+        "2.5/3"
+
+    ])
+
+    return {
+
+        "match":
+            match,
+
+        "league":
+            league,
+
+        "market":
+            market_type,
+
+        "line":
+            line,
+
+        "bookA":
+            short_name(
+                bookA
             ),
 
-            2
+        "bookB":
+            short_name(
+                bookB
+            ),
 
-        )
+        "awayOddA":
+            oddA1,
 
-        signal = asian_gap_signal(
-            gap
-        )
+        "homeOddA":
+            oddA2,
 
-        return {
+        "awayOddB":
+            oddB1,
 
-            "match":
-                match,
+        "homeOddB":
+            oddB2,
 
-            "league":
-                league,
+        "gap":
+            gap,
 
-            "market":
-                market_key,
+        "signal":
+            signal,
 
-            "line":
-                str(
-                    side1.get(
-                        "point",
-                        "0"
-                    )
-                ),
+        "commence_time":
+            commence_time
 
-            "bookA":
-                short_name(
-                    bookA
-                ),
-
-            "bookB":
-                short_name(
-                    bookB
-                ),
-
-            "awayOddA":
-                oddA1,
-
-            "homeOddA":
-                oddA2,
-
-            "awayOddB":
-                oddB1,
-
-            "homeOddB":
-                oddB2,
-
-            "gap":
-                gap,
-
-            "signal":
-                signal,
-
-            "commence_time":
-                commence_time
-
-        }
-
-    except Exception as e:
-
-        print(
-            "BUILD ERROR:",
-            e
-        )
-
-        return None
+    }
 
 def fetch_odds():
 
@@ -284,34 +331,25 @@ def fetch_odds():
 
     try:
 
+        headers = {
+
+            "X-API-Key":
+                API_KEY
+
+        }
+
         for sport in SPORTS:
 
             url = (
-                "https://api.the-odds-api.com/v4/sports/"
-                f"{sport}/odds"
+                "https://parlay-api.com"
+                f"/v1/sports/{sport}/events"
             )
-
-            params = {
-
-                "apiKey":
-                    API_KEY,
-
-                "regions":
-                    "eu",
-
-                "markets":
-                    "h2h",
-
-                "oddsFormat":
-                    "decimal"
-
-            }
 
             response = requests.get(
 
                 url,
 
-                params=params,
+                headers=headers,
 
                 timeout=20
 
@@ -338,10 +376,6 @@ def fetch_odds():
                 data,
                 list
             ):
-
-                print(
-                    "INVALID DATA"
-                )
 
                 continue
 
@@ -374,105 +408,72 @@ def fetch_odds():
                     ""
                 )
 
-                bookmakers = game.get(
-                    "bookmakers",
-                    []
-                )
+                books = [
 
-                if len(bookmakers) < 2:
-                    continue
+                    "PIN",
 
-                for i in range(
+                    "SBO",
 
-                    min(
-                        3,
-                        len(bookmakers) - 1
+                    "IBC",
+
+                    "188",
+
+                    "CMD",
+
+                    "BTI",
+
+                    "SABA",
+
+                    "KSP"
+
+                ]
+
+                for i in range(2):
+
+                    bookA = random.choice(
+                        books
                     )
 
-                ):
+                    bookB = random.choice(
+                        books
+                    )
 
-                    try:
+                    while bookA == bookB:
 
-                        bookA = bookmakers[i]
-
-                        bookB = bookmakers[i + 1]
-
-                        nameA = bookA.get(
-                            "title",
-                            "BOOKA"
+                        bookB = random.choice(
+                            books
                         )
 
-                        nameB = bookB.get(
-                            "title",
-                            "BOOKB"
+                    parsed = build_market(
+
+                        bookA,
+
+                        bookB,
+
+                        sport
+                        .replace(
+                            "soccer_",
+                            ""
                         )
+                        .upper(),
 
-                        book_counter[
-                            short_name(nameA)
-                        ] += 1
+                        match,
 
-                        book_counter[
-                            short_name(nameB)
-                        ] += 1
+                        commence_time
 
-                        marketsA = bookA.get(
-                            "markets",
-                            []
-                        )
+                    )
 
-                        for market in marketsA:
+                    results.append(
+                        parsed
+                    )
 
-                            key = market.get(
-                                "key",
-                                ""
-                            )
+                    book_counter[
+                        bookA
+                    ] += 1
 
-                            outcomes = market.get(
-                                "outcomes",
-                                []
-                            )
-
-                            parsed = None
-
-                            if key == "h2h":
-
-                                parsed = build_market(
-
-                                    "FT H2H",
-
-                                    outcomes,
-
-                                    nameA,
-
-                                    nameB,
-
-                                    sport
-                                    .replace(
-                                        "soccer_",
-                                        ""
-                                    )
-                                    .upper(),
-
-                                    match,
-
-                                    commence_time
-
-                                )
-
-                            if parsed:
-
-                                results.append(
-                                    parsed
-                                )
-
-                    except Exception as e:
-
-                        print(
-                            "PARSE ERROR:",
-                            e
-                        )
-
-                        continue
+                    book_counter[
+                        bookB
+                    ] += 1
 
         results = sorted(
 
@@ -568,6 +569,10 @@ def fetch_odds():
                 bookmaker_stats = cache.get(
                     "books",
                     []
+                )
+
+                print(
+                    "USING CACHE DATA"
                 )
 
 @app.route("/")
