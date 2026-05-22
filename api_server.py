@@ -36,17 +36,11 @@ SPORTS = [
 
     "soccer_france_ligue_one",
 
-    "soccer_netherlands_eredivisie",
-
-    "soccer_portugal_primeira_liga",
-
-    "soccer_turkey_super_league",
+    "soccer_usa_mls",
 
     "soccer_brazil_campeonato",
 
-    "soccer_argentina_primera_division",
-
-    "soccer_usa_mls"
+    "soccer_argentina_primera_division"
 
 ]
 
@@ -136,7 +130,20 @@ def asian_price():
 
     return value
 
-def build_market():
+def signal_from_gap(gap):
+
+    if gap >= 0.18:
+        return "SHARP"
+
+    if gap >= 0.12:
+        return "VALUE"
+
+    if gap >= 0.05:
+        return "WATCH"
+
+    return "NORMAL"
+
+def random_market():
 
     market = random.choice([
         "FT HDP",
@@ -157,20 +164,7 @@ def build_market():
 
     return market, line
 
-def signal_from_gap(gap):
-
-    if gap >= 0.18:
-        return "SHARP"
-
-    if gap >= 0.12:
-        return "VALUE"
-
-    if gap >= 0.05:
-        return "WATCH"
-
-    return "NORMAL"
-
-def generate_books():
+def random_books():
 
     bookA = random.choice(
         BOOKMAKERS
@@ -222,10 +216,6 @@ def fetch_odds():
 
             if response.status_code != 200:
 
-                print(
-                    f"FAILED {SPORT}"
-                )
-
                 continue
 
             data = response.json()
@@ -257,28 +247,28 @@ def fetch_odds():
 
                 )
 
-                market, line = build_market()
+                market, line = random_market()
 
-                bookA, bookB = generate_books()
+                bookA, bookB = random_books()
 
-                sideA_main = asian_price()
-                sideA_alt = asian_price()
+                oddA_main = asian_price()
+                oddA_alt = asian_price()
 
-                sideB_main = asian_price()
-                sideB_alt = asian_price()
+                oddB_main = asian_price()
+                oddB_alt = asian_price()
 
                 gap = round(
 
                     max(
 
                         abs(
-                            sideA_main -
-                            sideB_main
+                            oddA_main -
+                            oddB_main
                         ),
 
                         abs(
-                            sideA_alt -
-                            sideB_alt
+                            oddA_alt -
+                            oddB_alt
                         )
 
                     ),
@@ -317,16 +307,16 @@ def fetch_odds():
                         bookB,
 
                     "awayOddA":
-                        sideA_main,
+                        oddA_main,
 
                     "homeOddA":
-                        sideA_alt,
+                        oddA_alt,
 
                     "awayOddB":
-                        sideB_main,
+                        oddB_main,
 
                     "homeOddB":
-                        sideB_alt,
+                        oddB_alt,
 
                     "gap":
                         gap,
@@ -347,11 +337,14 @@ def fetch_odds():
             results,
 
             key=lambda x:
-                x["commence_time"]
+                (
+                    -x["gap"],
+                    x["commence_time"]
+                )
 
         )
 
-        cached_matches = results[:60]
+        cached_matches = results[:80]
 
         with open(
             CACHE_FILE,
