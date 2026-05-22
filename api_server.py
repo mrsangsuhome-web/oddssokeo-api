@@ -9,28 +9,6 @@ app = Flask(__name__)
 
 CORS(app)
 
-BOT_TOKEN = "from flask import Flask, jsonify, request
-from flask_cors import CORS
-
-import random
-import time
-import requests
-
-app = Flask(__name__)
-
-CORS(app)
-
-BOT_TOKEN = "from flask import Flask, jsonify, request
-from flask_cors import CORS
-
-import random
-import time
-import requests
-
-app = Flask(__name__)
-
-CORS(app)
-
 BOT_TOKEN = "8925919932:AAE_CN7NRn9JCbtknc9RqwXdzc9xqfGpG6g"
 
 CHAT_ID = "@sokeoscanner_bot"
