@@ -1,4 +1,4 @@
-```python
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -134,50 +134,97 @@ def generate_live_data(commence_time):
             ).total_seconds() / 60
         )
 
-        if diff < 0:
+        # CHƯA ĐÁ
+
+        if diff < -5:
+
+            local_time = match_time.astimezone()
 
             return {
+
                 "liveStatus": "PRE",
+
+                "displayTime":
+                    local_time.strftime("%H:%M"),
+
                 "minute": None,
+
                 "injury": None
+
             }
+
+        # HIỆP 1
 
         if diff <= 45:
 
             return {
+
                 "liveStatus": "H1",
+
+                "displayTime": None,
+
                 "minute": diff,
+
                 "injury": random.randint(0, 4)
+
             }
+
+        # HT
 
         if diff <= 60:
 
             return {
+
                 "liveStatus": "HT",
+
+                "displayTime": None,
+
                 "minute": 45,
+
                 "injury": 0
+
             }
+
+        # HIỆP 2
 
         if diff <= 110:
 
             return {
+
                 "liveStatus": "H2",
+
+                "displayTime": None,
+
                 "minute": diff - 15,
+
                 "injury": random.randint(0, 5)
+
             }
 
         return {
+
             "liveStatus": "FIN",
+
+            "displayTime": None,
+
             "minute": 90,
+
             "injury": 0
+
         }
 
     except:
 
         return {
+
             "liveStatus": "PRE",
+
+            "displayTime": "--:--",
+
             "minute": None,
+
             "injury": None
+
         }
 
 
@@ -242,7 +289,7 @@ def fetch_odds():
 
                     title = b.get("title")
 
-                   normalized = normalize_bookmaker(title)
+                    normalized = normalize_bookmaker(title)
 
                     if normalized:
 
@@ -366,6 +413,9 @@ def fetch_odds():
                     "liveStatus":
                         liveData["liveStatus"],
 
+                    "displayTime":
+                        liveData["displayTime"],
+
                     "minute":
                         liveData["minute"],
 
@@ -461,4 +511,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-```
+
