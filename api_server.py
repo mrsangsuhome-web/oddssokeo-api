@@ -28,8 +28,6 @@ bookmaker_stats = []
 
 SPORTS = [
 
-    SPORTS = [
-
     "soccer_epl",
 
     "soccer_uefa_champs_league",
