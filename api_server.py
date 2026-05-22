@@ -1,4 +1,3 @@
-
 import requests
 import time
 import json
@@ -35,6 +34,20 @@ SPORTS = [
 CACHE_FILE = "cache.json"
 
 cached_matches = []
+
+def clean_team_name(name):
+
+    return (
+        name
+        .replace(" FC", "")
+        .replace(" SC", "")
+        .replace(" CF", "")
+        .replace(".", "")
+        .replace("Montréal", "Montreal")
+        .replace("Atlético", "Atletico")
+        .replace("Deportivo ", "")
+        .strip()
+    )
 
 def fetch_odds():
 
@@ -77,14 +90,22 @@ def fetch_odds():
 
             for game in data:
 
-                home_team = game.get(
-                    "home_team",
-                    "HOME"
+                home_team = clean_team_name(
+
+                    game.get(
+                        "home_team",
+                        "HOME"
+                    )
+
                 )
 
-                away_team = game.get(
-                    "away_team",
-                    "AWAY"
+                away_team = clean_team_name(
+
+                    game.get(
+                        "away_team",
+                        "AWAY"
+                    )
+
                 )
 
                 commence_time = game.get(
@@ -110,8 +131,8 @@ def fetch_odds():
                     round(
 
                         random.uniform(
-                            -0.92,
-                            0.92
+                            -1.25,
+                            1.25
                         ),
 
                         2
@@ -143,6 +164,26 @@ def fetch_odds():
                         curr_ah
 
                 })
+
+        unique_matches = []
+
+        seen = set()
+
+        for item in results:
+
+            key = (
+                item["match"]
+                .lower()
+                .strip()
+            )
+
+            if key not in seen:
+
+                seen.add(key)
+
+                unique_matches.append(item)
+
+        results = unique_matches
 
         if len(results) == 0:
 
@@ -247,7 +288,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(180)
+        time.sleep(60)
 
 if __name__ == "__main__":
 
@@ -262,4 +303,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-
