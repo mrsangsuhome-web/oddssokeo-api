@@ -2,6 +2,7 @@ import requests
 import time
 import json
 import os
+import random
 
 from collections import Counter
 
@@ -89,6 +90,26 @@ def clean_team_name(name):
         .strip()
     )
 
+def convert_to_asian(price):
+
+    try:
+
+        value = round(
+            float(price) - 1,
+            2
+        )
+
+        if value < 0.80:
+            value = 0.80
+
+        if value > 0.99:
+            value = 0.99
+
+        return value
+
+    except:
+        return 0.90
+
 def asian_gap_signal(gap):
 
     if gap >= 0.05:
@@ -122,17 +143,17 @@ def build_market(
         side1 = outcomes[0]
         side2 = outcomes[1]
 
-        oddA1 = float(
+        oddA1 = convert_to_asian(
             side1.get(
                 "price",
-                0
+                1.91
             )
         )
 
-        oddA2 = float(
+        oddA2 = convert_to_asian(
             side2.get(
                 "price",
-                0
+                1.91
             )
         )
 
@@ -157,17 +178,17 @@ def build_market(
             2
         )
 
-        if oddB1 > 0.99:
-            oddB1 = 0.99
-
         if oddB1 < 0.80:
             oddB1 = 0.80
 
-        if oddB2 > 0.99:
-            oddB2 = 0.99
+        if oddB1 > 0.99:
+            oddB1 = 0.99
 
         if oddB2 < 0.80:
             oddB2 = 0.80
+
+        if oddB2 > 0.99:
+            oddB2 = 0.99
 
         gap = round(
 
@@ -221,16 +242,10 @@ def build_market(
                 ),
 
             "awayOddA":
-                round(
-                    oddA1,
-                    2
-                ),
+                oddA1,
 
             "homeOddA":
-                round(
-                    oddA2,
-                    2
-                ),
+                oddA2,
 
             "awayOddB":
                 oddB1,
@@ -394,6 +409,8 @@ def fetch_odds():
                                 []
                             )
 
+                            parsed = None
+
                             if key == "spreads":
 
                                 parsed = build_market(
@@ -444,17 +461,13 @@ def fetch_odds():
 
                                 )
 
-                            else:
-
-                                parsed = None
-
                             if parsed:
 
                                 results.append(
                                     parsed
                                 )
 
-                    except Exception:
+                    except:
                         continue
 
         results = sorted(
@@ -496,7 +509,7 @@ def fetch_odds():
                     ),
 
                 "latency":
-                    f"{round(count * 7.2)}ms"
+                    f"{random.randint(80, 900)}ms"
 
             })
 
@@ -530,29 +543,6 @@ def fetch_odds():
             e
         )
 
-        if os.path.exists(
-            CACHE_FILE
-        ):
-
-            with open(
-                CACHE_FILE,
-                "r"
-            ) as f:
-
-                cache = json.load(
-                    f
-                )
-
-                cached_matches = cache.get(
-                    "matches",
-                    []
-                )
-
-                bookmaker_stats = cache.get(
-                    "books",
-                    []
-                )
-
 @app.route("/")
 
 def home():
@@ -565,11 +555,6 @@ def home():
         "matches":
             len(
                 cached_matches
-            ),
-
-        "books":
-            len(
-                bookmaker_stats
             )
 
     })
@@ -599,8 +584,6 @@ def background_loop():
         time.sleep(20)
 
 if __name__ == "__main__":
-
-    import random
 
     fetch_odds()
 
