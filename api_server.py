@@ -24,6 +24,8 @@ CACHE_FILE = "cache.json"
 
 cached_matches = []
 
+console_logs = []
+
 SPORTS = [
 
     "soccer_epl",
@@ -32,16 +34,40 @@ SPORTS = [
     "soccer_germany_bundesliga",
     "soccer_italy_serie_a",
     "soccer_france_ligue_one",
+
     "soccer_portugal_primeira_liga",
     "soccer_netherlands_eredivisie",
+    "soccer_belgium_first_div",
     "soccer_turkey_super_lig",
+    "soccer_sweden_allsvenskan",
+    "soccer_norway_eliteserien",
+    "soccer_denmark_superliga",
+
     "soccer_brazil_campeonato",
     "soccer_argentina_primera_division",
+    "soccer_chile_campeonato",
+    "soccer_mexico_ligamx",
+
     "soccer_japan_j_league",
     "soccer_korea_kleague1",
+    "soccer_china_superleague",
     "soccer_australia_aleague",
+
     "soccer_uefa_champs_league",
-    "soccer_fifa_world_cup"
+    "soccer_uefa_europa_league",
+    "soccer_uefa_europa_conference_league",
+
+    "soccer_fifa_world_cup",
+    "soccer_fifa_world_cup_women",
+
+    "soccer_england_championship",
+    "soccer_england_league1",
+    "soccer_england_league2",
+
+    "soccer_scotland_premiership",
+    "soccer_switzerland_superleague",
+    "soccer_austria_bundesliga",
+    "soccer_poland_ekstraklasa"
 
 ]
 
@@ -53,16 +79,40 @@ LEAGUE_MAP = {
     "SOCCER_GERMANY_BUNDESLIGA": "BUN",
     "SOCCER_ITALY_SERIE_A": "SA",
     "SOCCER_FRANCE_LIGUE_ONE": "L1",
+
     "SOCCER_PORTUGAL_PRIMEIRA_LIGA": "POR",
     "SOCCER_NETHERLANDS_EREDIVISIE": "NED",
+    "SOCCER_BELGIUM_FIRST_DIV": "BEL",
     "SOCCER_TURKEY_SUPER_LIG": "TUR",
+    "SOCCER_SWEDEN_ALLSVENSKAN": "SWE",
+    "SOCCER_NORWAY_ELITESERIEN": "NOR",
+    "SOCCER_DENMARK_SUPERLIGA": "DEN",
+
     "SOCCER_BRAZIL_CAMPEONATO": "BRA",
     "SOCCER_ARGENTINA_PRIMERA_DIVISION": "ARG",
+    "SOCCER_CHILE_CAMPEONATO": "CHI",
+    "SOCCER_MEXICO_LIGAMX": "MEX",
+
     "SOCCER_JAPAN_J_LEAGUE": "JPN",
     "SOCCER_KOREA_KLEAGUE1": "KOR",
+    "SOCCER_CHINA_SUPERLEAGUE": "CHN",
     "SOCCER_AUSTRALIA_ALEAGUE": "AUS",
+
     "SOCCER_UEFA_CHAMPS_LEAGUE": "UCL",
-    "SOCCER_FIFA_WORLD_CUP": "WC"
+    "SOCCER_UEFA_EUROPA_LEAGUE": "UEL",
+    "SOCCER_UEFA_EUROPA_CONFERENCE_LEAGUE": "UECL",
+
+    "SOCCER_FIFA_WORLD_CUP": "WC",
+    "SOCCER_FIFA_WORLD_CUP_WOMEN": "WWC",
+
+    "SOCCER_ENGLAND_CHAMPIONSHIP": "EFL",
+    "SOCCER_ENGLAND_LEAGUE1": "L1 ENG",
+    "SOCCER_ENGLAND_LEAGUE2": "L2 ENG",
+
+    "SOCCER_SCOTLAND_PREMIERSHIP": "SCO",
+    "SOCCER_SWITZERLAND_SUPERLEAGUE": "SUI",
+    "SOCCER_AUSTRIA_BUNDESLIGA": "AUT",
+    "SOCCER_POLAND_EKSTRAKLASA": "POL"
 
 }
 
@@ -142,7 +192,11 @@ def generate_live_data(commence_time):
 
                 "minute": 0,
 
-                "injury": 0
+                "injury": 0,
+
+                "homeScore": None,
+
+                "awayScore": None
 
             }
 
@@ -156,7 +210,13 @@ def generate_live_data(commence_time):
 
                 "minute": diff,
 
-                "injury": random.randint(0, 4)
+                "injury": random.randint(0, 4),
+
+                "homeScore":
+                    random.randint(0, 3),
+
+                "awayScore":
+                    random.randint(0, 3)
 
             }
 
@@ -170,7 +230,13 @@ def generate_live_data(commence_time):
 
                 "minute": 45,
 
-                "injury": 0
+                "injury": 0,
+
+                "homeScore":
+                    random.randint(0, 3),
+
+                "awayScore":
+                    random.randint(0, 3)
 
             }
 
@@ -184,7 +250,13 @@ def generate_live_data(commence_time):
 
                 "minute": diff - 15,
 
-                "injury": random.randint(0, 5)
+                "injury": random.randint(0, 5),
+
+                "homeScore":
+                    random.randint(0, 4),
+
+                "awayScore":
+                    random.randint(0, 4)
 
             }
 
@@ -196,7 +268,13 @@ def generate_live_data(commence_time):
 
             "minute": 90,
 
-            "injury": 0
+            "injury": 0,
+
+            "homeScore":
+                random.randint(0, 5),
+
+            "awayScore":
+                random.randint(0, 5)
 
         }
 
@@ -210,7 +288,11 @@ def generate_live_data(commence_time):
 
             "minute": 0,
 
-            "injury": 0
+            "injury": 0,
+
+            "homeScore": None,
+
+            "awayScore": None
 
         }
 
@@ -357,6 +439,24 @@ def fetch_odds():
                     commence_time
                 )
 
+                console_logs.insert(
+
+                    0,
+
+                    {
+
+                        "time":
+                            datetime.now().strftime("%H:%M:%S"),
+
+                        "message":
+                            f"{bookA} updated {home_team} vs {away_team} gap +{gap}"
+
+                    }
+
+                )
+
+                console_logs[:] = console_logs[:30]
+
                 results.append({
 
                     "match":
@@ -365,14 +465,14 @@ def fetch_odds():
                     "league":
                         LEAGUE_MAP.get(
                             SPORT.upper(),
-                            "EPL"
+                            SPORT.upper()
                         ),
 
                     "market":
-                        market or "FT HDP",
+                        market,
 
                     "line":
-                        line or "1.5",
+                        line,
 
                     "bookA":
                         bookA,
@@ -381,19 +481,19 @@ def fetch_odds():
                         bookB,
 
                     "awayOddA":
-                        awayOddA or 0.91,
+                        awayOddA,
 
                     "awayOddB":
-                        awayOddB or 0.92,
+                        awayOddB,
 
                     "homeOddA":
-                        homeOddA or 0.89,
+                        homeOddA,
 
                     "homeOddB":
-                        homeOddB or 0.88,
+                        homeOddB,
 
                     "gap":
-                        gap or 0.02,
+                        gap,
 
                     "liveStatus":
                         liveData["liveStatus"],
@@ -402,26 +502,54 @@ def fetch_odds():
                         liveData["displayTime"],
 
                     "minute":
-                        liveData.get("minute", 0),
+                        liveData["minute"],
 
                     "injury":
-                        liveData.get("injury", 0),
+                        liveData["injury"],
+
+                    "homeScore":
+                        liveData["homeScore"],
+
+                    "awayScore":
+                        liveData["awayScore"],
 
                     "timestamp":
                         int(time.time())
 
                 })
 
+        def sort_priority(item):
+
+            live_order = {
+
+                "H1": 0,
+                "HT": 1,
+                "H2": 2,
+                "PRE": 3,
+                "FIN": 4
+
+            }
+
+            return (
+
+                live_order.get(
+                    item["liveStatus"],
+                    99
+                ),
+
+                -item["gap"],
+
+                -item["timestamp"]
+
+            )
+
         cached_matches = sorted(
 
             results,
 
-            key=lambda x:
-                x["timestamp"],
+            key=sort_priority
 
-            reverse=True
-
-        )[:20]
+        )[:50]
 
         with open(
             CACHE_FILE,
@@ -474,6 +602,14 @@ def matches():
 
     return jsonify(
         cached_matches
+    )
+
+
+@app.route("/console")
+def console():
+
+    return jsonify(
+        console_logs
     )
 
 
