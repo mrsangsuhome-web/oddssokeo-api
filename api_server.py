@@ -383,8 +383,7 @@ def fetch_odds():
 
                     title = b.get("title")
 
-                    normalized =
-                        normalize_bookmaker(
+                    normalized = normalize_bookmaker(
                             title
                         )
 
