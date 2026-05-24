@@ -49,9 +49,25 @@ SPORTS = [
     "soccer_mexico_ligamx",
 
     "soccer_japan_j_league",
+    "soccer_japan_j2_league",
+    "soccer_japan_j3_league",
+
     "soccer_korea_kleague1",
+    "soccer_korea_kleague2",
+
     "soccer_china_superleague",
+    "soccer_china_league_one",
+
     "soccer_australia_aleague",
+
+    "soccer_australia_npl_queensland",
+    "soccer_australia_npl_nsw",
+    "soccer_australia_npl_victoria",
+    "soccer_australia_npl_tasmania",
+
+    "soccer_australia_queensland_premier_league",
+
+    "soccer_australia_npl_nsw_u20",
 
     "soccer_uefa_champs_league",
     "soccer_uefa_europa_league",
@@ -67,54 +83,25 @@ SPORTS = [
     "soccer_scotland_premiership",
     "soccer_switzerland_superleague",
     "soccer_austria_bundesliga",
-    "soccer_poland_ekstraklasa"
+    "soccer_poland_ekstraklasa",
+
+    "soccer_russia_fnl2",
+
+    "soccer_japan_nadeshiko_league_women",
+
+    "soccer_ofc_pro_league",
+
+    "soccer_brazil_serie_b",
+
+    "soccer_argentina_primera_b",
+
+    "soccer_sweden_superettan",
+
+    "soccer_norway_division_1",
+
+    "soccer_denmark_division_1"
 
 ]
-
-LEAGUE_MAP = {
-
-    "SOCCER_EPL": "EPL",
-    "SOCCER_USA_MLS": "MLS",
-    "SOCCER_SPAIN_LA_LIGA": "LAL",
-    "SOCCER_GERMANY_BUNDESLIGA": "BUN",
-    "SOCCER_ITALY_SERIE_A": "SA",
-    "SOCCER_FRANCE_LIGUE_ONE": "L1",
-
-    "SOCCER_PORTUGAL_PRIMEIRA_LIGA": "POR",
-    "SOCCER_NETHERLANDS_EREDIVISIE": "NED",
-    "SOCCER_BELGIUM_FIRST_DIV": "BEL",
-    "SOCCER_TURKEY_SUPER_LIG": "TUR",
-    "SOCCER_SWEDEN_ALLSVENSKAN": "SWE",
-    "SOCCER_NORWAY_ELITESERIEN": "NOR",
-    "SOCCER_DENMARK_SUPERLIGA": "DEN",
-
-    "SOCCER_BRAZIL_CAMPEONATO": "BRA",
-    "SOCCER_ARGENTINA_PRIMERA_DIVISION": "ARG",
-    "SOCCER_CHILE_CAMPEONATO": "CHI",
-    "SOCCER_MEXICO_LIGAMX": "MEX",
-
-    "SOCCER_JAPAN_J_LEAGUE": "JPN",
-    "SOCCER_KOREA_KLEAGUE1": "KOR",
-    "SOCCER_CHINA_SUPERLEAGUE": "CHN",
-    "SOCCER_AUSTRALIA_ALEAGUE": "AUS",
-
-    "SOCCER_UEFA_CHAMPS_LEAGUE": "UCL",
-    "SOCCER_UEFA_EUROPA_LEAGUE": "UEL",
-    "SOCCER_UEFA_EUROPA_CONFERENCE_LEAGUE": "UECL",
-
-    "SOCCER_FIFA_WORLD_CUP": "WC",
-    "SOCCER_FIFA_WORLD_CUP_WOMEN": "WWC",
-
-    "SOCCER_ENGLAND_CHAMPIONSHIP": "EFL",
-    "SOCCER_ENGLAND_LEAGUE1": "L1 ENG",
-    "SOCCER_ENGLAND_LEAGUE2": "L2 ENG",
-
-    "SOCCER_SCOTLAND_PREMIERSHIP": "SCO",
-    "SOCCER_SWITZERLAND_SUPERLEAGUE": "SUI",
-    "SOCCER_AUSTRIA_BUNDESLIGA": "AUT",
-    "SOCCER_POLAND_EKSTRAKLASA": "POL"
-
-}
 
 BOOKMAKER_MAP = {
 
@@ -152,7 +139,7 @@ def normalize_bookmaker(name):
     if not name:
         return None
 
-    upper_name = name.upper()
+    upper_name = str(name).upper()
 
     for key, short in BOOKMAKER_MAP.items():
 
@@ -173,7 +160,10 @@ def safe_float(value, default=0.91):
 
 def parse_live_data(game):
 
-    scores = game.get("scores", {})
+    scores = game.get(
+        "scores",
+        {}
+    )
 
     home_score = scores.get(
         "home",
@@ -227,7 +217,7 @@ def parse_live_data(game):
         try:
 
             minute = int(
-                clock.split(":")[0]
+                str(clock).split(":")[0]
             )
 
         except:
@@ -359,11 +349,6 @@ def fetch_odds():
                     []
                 )
 
-                commence_time = game.get(
-                    "commence_time",
-                    ""
-                )
-
                 market = "FT O/U"
 
                 line = "2.5"
@@ -381,11 +366,13 @@ def fetch_odds():
 
                 for b in bookmakers:
 
-                    title = b.get("title")
+                    title = b.get(
+                        "title"
+                    )
 
                     normalized = normalize_bookmaker(
-                            title
-                        )
+                        title
+                    )
 
                     if normalized:
 
@@ -415,57 +402,49 @@ def fetch_odds():
 
                     try:
 
-                        first_book =
-                            bookmakers[0]
+                        first_book = bookmakers[0]
 
-                        markets =
-                            first_book.get(
-                                "markets",
-                                []
-                            )
+                        markets = first_book.get(
+                            "markets",
+                            []
+                        )
 
                         if markets:
 
-                            market_data =
-                                markets[0]
+                            market_data = markets[0]
 
-                            market =
-                                market_data.get(
-                                    "key",
-                                    "FT O/U"
-                                )
+                            market = market_data.get(
+                                "key",
+                                "FT O/U"
+                            )
 
-                            outcomes =
-                                market_data.get(
-                                    "outcomes",
-                                    []
-                                )
+                            outcomes = market_data.get(
+                                "outcomes",
+                                []
+                            )
 
                             if len(outcomes) >= 2:
 
-                                awayOddA =
-                                    safe_float(
-                                        outcomes[0].get(
-                                            "price",
-                                            0.91
-                                        )
+                                awayOddA = safe_float(
+                                    outcomes[0].get(
+                                        "price",
+                                        0.91
                                     )
+                                )
 
-                                homeOddA =
-                                    safe_float(
-                                        outcomes[1].get(
-                                            "price",
-                                            0.89
-                                        )
+                                homeOddA = safe_float(
+                                    outcomes[1].get(
+                                        "price",
+                                        0.89
                                     )
+                                )
 
-                                line =
-                                    str(
-                                        outcomes[0].get(
-                                            "point",
-                                            "2.5"
-                                        )
+                                line = str(
+                                    outcomes[0].get(
+                                        "point",
+                                        "2.5"
                                     )
+                                )
 
                     except:
                         pass
@@ -500,10 +479,9 @@ def fetch_odds():
                     2
                 )
 
-                liveData =
-                    parse_live_data(
-                        game
-                    )
+                liveData = parse_live_data(
+                    game
+                )
 
                 console_logs.insert(
 
@@ -523,8 +501,7 @@ def fetch_odds():
 
                 )
 
-                console_logs[:] =
-                    console_logs[:30]
+                console_logs[:] = console_logs[:30]
 
                 results.append({
 
@@ -532,10 +509,12 @@ def fetch_odds():
                         f"{home_team} vs {away_team}",
 
                     "league":
-                        LEAGUE_MAP.get(
-                            SPORT.upper(),
-                            SPORT.upper()
-                        ),
+                        SPORT
+                        .replace(
+                            "soccer_",
+                            ""
+                        )
+                        .upper(),
 
                     "market":
                         market,
@@ -621,7 +600,7 @@ def fetch_odds():
 
             key=sort_priority
 
-        )[:60]
+        )[:100]
 
         with open(
             CACHE_FILE,
