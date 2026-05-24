@@ -221,6 +221,12 @@ LEAGUE_NAMES = {
             "name": "China Super League"
         },
 
+    "soccer_netherlands_eredivisie":
+        {
+            "short": "NED",
+            "name": "Netherlands Eredivisie"
+        },
+
     "soccer_australia_npl_queensland":
         {
             "short": "NPL QLD",
@@ -380,17 +386,29 @@ def parse_live_data(game):
                 ).total_seconds() / 60
             )
 
-            if minutes_live > 120:
-                minutes_live = 90
+            if minutes_live <= 45:
 
-            if minutes_live < 1:
-                minutes_live = 1
+                display_clock = f"{minutes_live}'"
+
+            elif minutes_live <= 60:
+
+                display_clock = "HT"
+
+            elif minutes_live <= 105:
+
+                second_half = minutes_live - 15
+
+                display_clock = f"{second_half}'"
+
+            else:
+
+                display_clock = "90+'"
 
             return {
 
                 "status": "LIVE",
 
-                "clock": f"{minutes_live}'",
+                "clock": display_clock,
 
                 "displayTime": None,
 
