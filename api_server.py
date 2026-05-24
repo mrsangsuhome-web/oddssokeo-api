@@ -10,7 +10,7 @@ import os
 
 from threading import Thread
 from dotenv import load_dotenv
-from datetime import datetime, timezone
+from datetime import datetime
 
 load_dotenv()
 
@@ -133,6 +133,76 @@ DEFAULT_BOOKMAKERS = [
 
 ]
 
+LEAGUE_NAMES = {
+
+    "soccer_epl":
+        {
+            "short": "EPL",
+            "name": "England Premier League"
+        },
+
+    "soccer_usa_mls":
+        {
+            "short": "MLS",
+            "name": "USA Major League Soccer"
+        },
+
+    "soccer_spain_la_liga":
+        {
+            "short": "LAL",
+            "name": "Spain La Liga"
+        },
+
+    "soccer_germany_bundesliga":
+        {
+            "short": "BUN",
+            "name": "Germany Bundesliga"
+        },
+
+    "soccer_italy_serie_a":
+        {
+            "short": "SA",
+            "name": "Italy Serie A"
+        },
+
+    "soccer_france_ligue_one":
+        {
+            "short": "L1",
+            "name": "France Ligue 1"
+        },
+
+    "soccer_japan_j_league":
+        {
+            "short": "J1",
+            "name": "Japan J1 League"
+        },
+
+    "soccer_japan_j2_league":
+        {
+            "short": "J2",
+            "name": "Japan J2 League"
+        },
+
+    "soccer_japan_j3_league":
+        {
+            "short": "J3",
+            "name": "Japan J3 League"
+        },
+
+    "soccer_uefa_champs_league":
+        {
+            "short": "UCL",
+            "name": "UEFA Champions League"
+        },
+
+    "soccer_australia_npl_queensland":
+        {
+            "short": "NPL QLD",
+            "name": "Australia NPL Queensland"
+        }
+
+}
+
 
 def normalize_bookmaker(name):
 
@@ -144,7 +214,6 @@ def normalize_bookmaker(name):
     for key, short in BOOKMAKER_MAP.items():
 
         if key in upper_name:
-
             return short
 
     return upper_name[:6]
@@ -160,30 +229,15 @@ def safe_float(value, default=0.91):
 
 def parse_live_data(game):
 
-    scores = game.get(
-        "scores",
-        {}
-    )
+    scores = game.get("scores", {})
 
-    home_score = scores.get(
-        "home",
-        0
-    )
+    home_score = scores.get("home", 0)
 
-    away_score = scores.get(
-        "away",
-        0
-    )
+    away_score = scores.get("away", 0)
 
-    clock = game.get(
-        "clock",
-        None
-    )
+    clock = game.get("clock")
 
-    completed = game.get(
-        "completed",
-        False
-    )
+    completed = game.get("completed", False)
 
     commence_time = game.get(
         "commence_time",
@@ -195,17 +249,9 @@ def parse_live_data(game):
         return {
 
             "liveStatus": "FIN",
-
-            "displayTime": None,
-
             "clock": "FT",
-
-            "minute": 90,
-
-            "injury": 0,
-
+            "displayTime": None,
             "homeScore": home_score,
-
             "awayScore": away_score
 
         }
@@ -215,11 +261,9 @@ def parse_live_data(game):
         minute = 0
 
         try:
-
             minute = int(
                 str(clock).split(":")[0]
             )
-
         except:
             pass
 
@@ -231,17 +275,9 @@ def parse_live_data(game):
         return {
 
             "liveStatus": status,
-
-            "displayTime": None,
-
             "clock": clock,
-
-            "minute": minute,
-
-            "injury": 0,
-
+            "displayTime": None,
             "homeScore": home_score,
-
             "awayScore": away_score
 
         }
@@ -255,25 +291,18 @@ def parse_live_data(game):
             )
         )
 
-        local_time = match_time.astimezone()
-
         return {
 
             "liveStatus": "PRE",
 
+            "clock": None,
+
             "displayTime":
-                local_time.strftime(
+                match_time.strftime(
                     "%d/%m • %H:%M"
                 ),
 
-            "clock": None,
-
-            "minute": 0,
-
-            "injury": 0,
-
             "homeScore": None,
-
             "awayScore": None
 
         }
@@ -284,16 +313,11 @@ def parse_live_data(game):
 
             "liveStatus": "PRE",
 
-            "displayTime": "--/-- • --:--",
-
             "clock": None,
 
-            "minute": 0,
-
-            "injury": 0,
+            "displayTime": "--/-- • --:--",
 
             "homeScore": None,
-
             "awayScore": None
 
         }
@@ -311,17 +335,17 @@ def fetch_odds():
             "X-API-Key": API_KEY
         }
 
-        for SPORT in SPORTS:
+        for sport in SPORTS:
 
             url = (
                 f"https://parlay-api.com/v1/"
-                f"sports/{SPORT}/events"
+                f"sports/{sport}/events"
             )
 
             response = requests.get(
                 url,
                 headers=headers,
-                timeout=20
+                timeout=15
             )
 
             if response.status_code != 200:
@@ -349,33 +373,15 @@ def fetch_odds():
                     []
                 )
 
-                market = "FT O/U"
-
-                line = "2.5"
-
-                bookA = "PIN"
-                bookB = "365"
-
-                awayOddA = 0.91
-                awayOddB = 0.93
-
-                homeOddA = 0.89
-                homeOddB = 0.87
-
                 real_books = []
 
                 for b in bookmakers:
 
-                    title = b.get(
-                        "title"
-                    )
-
                     normalized = normalize_bookmaker(
-                        title
+                        b.get("title")
                     )
 
                     if normalized:
-
                         real_books.append(
                             normalized
                         )
@@ -398,27 +404,28 @@ def fetch_odds():
                         2
                     )
 
+                line = "2.5"
+
+                awayOddA = 0.91
+                awayOddB = 0.93
+
+                homeOddA = 0.89
+                homeOddB = 0.87
+
+                market = "FT O/U"
+
                 if bookmakers:
 
                     try:
 
-                        first_book = bookmakers[0]
-
-                        markets = first_book.get(
+                        markets = bookmakers[0].get(
                             "markets",
                             []
                         )
 
                         if markets:
 
-                            market_data = markets[0]
-
-                            market = market_data.get(
-                                "key",
-                                "FT O/U"
-                            )
-
-                            outcomes = market_data.get(
+                            outcomes = markets[0].get(
                                 "outcomes",
                                 []
                             )
@@ -479,7 +486,13 @@ def fetch_odds():
                     2
                 )
 
-                liveData = parse_live_data(
+                movement_score = round(
+                    gap *
+                    random.uniform(1, 3),
+                    2
+                )
+
+                live_data = parse_live_data(
                     game
                 )
 
@@ -509,60 +522,55 @@ def fetch_odds():
                         f"{home_team} vs {away_team}",
 
                     "league":
-                        SPORT
-                        .replace(
-                            "soccer_",
-                            ""
-                        )
-                        .upper(),
+                        LEAGUE_NAMES.get(
+                            sport,
+                            {}
+                        ).get(
+                            "short",
+                            sport.upper()
+                        ),
 
-                    "market":
-                        market,
+                    "leagueName":
+                        LEAGUE_NAMES.get(
+                            sport,
+                            {}
+                        ).get(
+                            "name",
+                            sport.upper()
+                        ),
 
-                    "line":
-                        line,
+                    "market": market,
 
-                    "bookA":
-                        bookA,
+                    "line": line,
 
-                    "bookB":
-                        bookB,
+                    "bookA": bookA,
+                    "bookB": bookB,
 
-                    "awayOddA":
-                        awayOddA,
+                    "awayOddA": awayOddA,
+                    "awayOddB": awayOddB,
 
-                    "awayOddB":
-                        awayOddB,
+                    "homeOddA": homeOddA,
+                    "homeOddB": homeOddB,
 
-                    "homeOddA":
-                        homeOddA,
+                    "gap": gap,
 
-                    "homeOddB":
-                        homeOddB,
-
-                    "gap":
-                        gap,
+                    "movementScore":
+                        movement_score,
 
                     "liveStatus":
-                        liveData["liveStatus"],
-
-                    "displayTime":
-                        liveData["displayTime"],
+                        live_data["liveStatus"],
 
                     "clock":
-                        liveData["clock"],
+                        live_data["clock"],
 
-                    "minute":
-                        liveData["minute"],
-
-                    "injury":
-                        liveData["injury"],
+                    "displayTime":
+                        live_data["displayTime"],
 
                     "homeScore":
-                        liveData["homeScore"],
+                        live_data["homeScore"],
 
                     "awayScore":
-                        liveData["awayScore"],
+                        live_data["awayScore"],
 
                     "timestamp":
                         int(time.time())
@@ -588,6 +596,11 @@ def fetch_odds():
                     99
                 ),
 
+                -item.get(
+                    "movementScore",
+                    0
+                ),
+
                 -item["gap"],
 
                 -item["timestamp"]
@@ -595,11 +608,8 @@ def fetch_odds():
             )
 
         cached_matches = sorted(
-
             results,
-
             key=sort_priority
-
         )[:100]
 
         with open(
@@ -620,19 +630,6 @@ def fetch_odds():
 
         print("API ERROR:", e)
 
-        if os.path.exists(
-            CACHE_FILE
-        ):
-
-            with open(
-                CACHE_FILE,
-                "r"
-            ) as f:
-
-                cached_matches = json.load(f)
-
-            print("USING CACHE DATA")
-
 
 @app.route("/")
 def home():
@@ -641,9 +638,7 @@ def home():
 
         "status": "running",
 
-        "matches": len(cached_matches),
-
-        "source": "PARLAY API"
+        "matches": len(cached_matches)
 
     })
 
@@ -670,7 +665,7 @@ def background_loop():
 
         fetch_odds()
 
-        time.sleep(8)
+        time.sleep(6)
 
 
 if __name__ == "__main__":
