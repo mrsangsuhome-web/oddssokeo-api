@@ -26,6 +26,10 @@ cached_matches = []
 
 console_logs = []
 
+source_health_cache = []
+
+arb_cache = []
+
 SPORTS = [
 
     "soccer_epl",
@@ -39,6 +43,7 @@ SPORTS = [
     "soccer_netherlands_eredivisie",
     "soccer_belgium_first_div",
     "soccer_turkey_super_lig",
+
     "soccer_sweden_allsvenskan",
     "soccer_norway_eliteserien",
     "soccer_denmark_superliga",
@@ -89,17 +94,7 @@ SPORTS = [
 
     "soccer_japan_nadeshiko_league_women",
 
-    "soccer_ofc_pro_league",
-
-    "soccer_brazil_serie_b",
-
-    "soccer_argentina_primera_b",
-
-    "soccer_sweden_superettan",
-
-    "soccer_norway_division_1",
-
-    "soccer_denmark_division_1"
+    "soccer_ofc_pro_league"
 
 ]
 
@@ -195,10 +190,34 @@ LEAGUE_NAMES = {
             "name": "UEFA Champions League"
         },
 
+    "soccer_uefa_europa_league":
+        {
+            "short": "UEL",
+            "name": "UEFA Europa League"
+        },
+
+    "soccer_uefa_europa_conference_league":
+        {
+            "short": "UECL",
+            "name": "UEFA Europa Conference League"
+        },
+
     "soccer_australia_npl_queensland":
         {
             "short": "NPL QLD",
             "name": "Australia NPL Queensland"
+        },
+
+    "soccer_australia_npl_victoria":
+        {
+            "short": "NPL VIC",
+            "name": "Australia NPL Victoria"
+        },
+
+    "soccer_australia_npl_tasmania":
+        {
+            "short": "NPL TAS",
+            "name": "Australia NPL Tasmania"
         }
 
 }
@@ -229,15 +248,27 @@ def safe_float(value, default=0.91):
 
 def parse_live_data(game):
 
-    scores = game.get("scores", {})
+    scores = game.get(
+        "scores",
+        {}
+    )
 
-    home_score = scores.get("home", 0)
+    home_score = scores.get(
+        "home",
+        0
+    )
 
-    away_score = scores.get("away", 0)
+    away_score = scores.get(
+        "away",
+        0
+    )
 
     clock = game.get("clock")
 
-    completed = game.get("completed", False)
+    completed = game.get(
+        "completed",
+        False
+    )
 
     commence_time = game.get(
         "commence_time",
@@ -249,35 +280,29 @@ def parse_live_data(game):
         return {
 
             "liveStatus": "FIN",
+
             "clock": "FT",
+
             "displayTime": None,
+
             "homeScore": home_score,
+
             "awayScore": away_score
 
         }
 
     if clock:
 
-        minute = 0
-
-        try:
-            minute = int(
-                str(clock).split(":")[0]
-            )
-        except:
-            pass
-
-        status = "H1"
-
-        if minute >= 46:
-            status = "H2"
-
         return {
 
-            "liveStatus": status,
+            "liveStatus": "LIVE",
+
             "clock": clock,
+
             "displayTime": None,
+
             "homeScore": home_score,
+
             "awayScore": away_score
 
         }
@@ -303,6 +328,7 @@ def parse_live_data(game):
                 ),
 
             "homeScore": None,
+
             "awayScore": None
 
         }
@@ -318,12 +344,13 @@ def parse_live_data(game):
             "displayTime": "--/-- • --:--",
 
             "homeScore": None,
+
             "awayScore": None
 
         }
 
 
-def fetch_odds():
+def fetch_live_matches():
 
     global cached_matches
 
@@ -337,280 +364,282 @@ def fetch_odds():
 
         for sport in SPORTS:
 
-            url = (
-                f"https://parlay-api.com/v1/"
-                f"sports/{sport}/events"
-            )
+            try:
 
-            response = requests.get(
-                url,
-                headers=headers,
-                timeout=15
-            )
-
-            if response.status_code != 200:
-                continue
-
-            data = response.json()
-
-            if not isinstance(data, list):
-                continue
-
-            for game in data:
-
-                home_team = game.get(
-                    "home_team",
-                    "HOME"
+                live_url = (
+                    f"https://parlay-api.com/v1/"
+                    f"sports/{sport}/live"
                 )
 
-                away_team = game.get(
-                    "away_team",
-                    "AWAY"
+                response = requests.get(
+                    live_url,
+                    headers=headers,
+                    timeout=12
                 )
 
-                bookmakers = game.get(
-                    "bookmakers",
-                    []
-                )
+                if response.status_code != 200:
+                    continue
 
-                real_books = []
+                data = response.json()
 
-                for b in bookmakers:
+                if not isinstance(data, list):
+                    continue
 
-                    normalized = normalize_bookmaker(
-                        b.get("title")
+                for game in data:
+
+                    home_team = game.get(
+                        "home_team",
+                        "HOME"
                     )
 
-                    if normalized:
-                        real_books.append(
-                            normalized
+                    away_team = game.get(
+                        "away_team",
+                        "AWAY"
+                    )
+
+                    bookmakers = game.get(
+                        "bookmakers",
+                        []
+                    )
+
+                    line = "2.5"
+
+                    market = "FT O/U"
+
+                    awayOddA = 0.91
+                    homeOddA = 0.89
+
+                    awayOddB = 0.93
+                    homeOddB = 0.87
+
+                    real_books = []
+
+                    for b in bookmakers:
+
+                        normalized = normalize_bookmaker(
+                            b.get("title")
                         )
 
-                real_books = list(
-                    set(real_books)
-                )
+                        if normalized:
+                            real_books.append(
+                                normalized
+                            )
 
-                if len(real_books) >= 2:
-
-                    bookA, bookB = random.sample(
-                        real_books,
-                        2
+                    real_books = list(
+                        set(real_books)
                     )
 
-                else:
+                    if len(real_books) >= 2:
 
-                    bookA, bookB = random.sample(
-                        DEFAULT_BOOKMAKERS,
-                        2
-                    )
-
-                line = "2.5"
-
-                awayOddA = 0.91
-                awayOddB = 0.93
-
-                homeOddA = 0.89
-                homeOddB = 0.87
-
-                market = "FT O/U"
-
-                if bookmakers:
-
-                    try:
-
-                        markets = bookmakers[0].get(
-                            "markets",
-                            []
+                        bookA, bookB = random.sample(
+                            real_books,
+                            2
                         )
 
-                        if markets:
+                    else:
 
-                            outcomes = markets[0].get(
-                                "outcomes",
+                        bookA, bookB = random.sample(
+                            DEFAULT_BOOKMAKERS,
+                            2
+                        )
+
+                    if bookmakers:
+
+                        try:
+
+                            markets = bookmakers[0].get(
+                                "markets",
                                 []
                             )
 
-                            if len(outcomes) >= 2:
+                            if markets:
 
-                                awayOddA = safe_float(
-                                    outcomes[0].get(
-                                        "price",
-                                        0.91
-                                    )
+                                market_data = markets[0]
+
+                                market = market_data.get(
+                                    "key",
+                                    "FT O/U"
                                 )
 
-                                homeOddA = safe_float(
-                                    outcomes[1].get(
-                                        "price",
-                                        0.89
-                                    )
+                                outcomes = market_data.get(
+                                    "outcomes",
+                                    []
                                 )
 
-                                line = str(
-                                    outcomes[0].get(
-                                        "point",
-                                        "2.5"
+                                if len(outcomes) >= 2:
+
+                                    awayOddA = safe_float(
+                                        outcomes[0].get(
+                                            "price",
+                                            0.91
+                                        )
                                     )
-                                )
 
-                    except:
-                        pass
+                                    homeOddA = safe_float(
+                                        outcomes[1].get(
+                                            "price",
+                                            0.89
+                                        )
+                                    )
 
-                awayOddB = round(
-                    awayOddA +
-                    random.choice([
-                        -0.02,
-                        -0.01,
-                        0.01,
-                        0.02
-                    ]),
-                    2
-                )
+                                    line = str(
+                                        outcomes[0].get(
+                                            "point",
+                                            "2.5"
+                                        )
+                                    )
 
-                homeOddB = round(
-                    homeOddA +
-                    random.choice([
-                        -0.02,
-                        -0.01,
-                        0.01,
-                        0.02
-                    ]),
-                    2
-                )
+                        except:
+                            pass
 
-                gap = round(
-                    abs(
-                        awayOddA -
-                        awayOddB
-                    ),
-                    2
-                )
+                    awayOddB = round(
+                        awayOddA +
+                        random.choice([
+                            -0.02,
+                            -0.01,
+                            0.01,
+                            0.02
+                        ]),
+                        2
+                    )
 
-                movement_score = round(
-                    gap *
-                    random.uniform(1, 3),
-                    2
-                )
+                    homeOddB = round(
+                        homeOddA +
+                        random.choice([
+                            -0.02,
+                            -0.01,
+                            0.01,
+                            0.02
+                        ]),
+                        2
+                    )
 
-                live_data = parse_live_data(
-                    game
-                )
+                    gap = round(
+                        abs(
+                            awayOddA -
+                            awayOddB
+                        ),
+                        2
+                    )
 
-                console_logs.insert(
+                    movement_score = round(
+                        gap *
+                        random.uniform(1, 3),
+                        2
+                    )
 
-                    0,
+                    live_data = parse_live_data(
+                        game
+                    )
 
-                    {
+                    console_logs.insert(
 
-                        "time":
-                            datetime.now().strftime(
-                                "%H:%M:%S"
+                        0,
+
+                        {
+
+                            "time":
+                                datetime.now().strftime(
+                                    "%H:%M:%S"
+                                ),
+
+                            "message":
+                                f"LIVE {home_team} vs {away_team} movement +{movement_score}"
+
+                        }
+
+                    )
+
+                    console_logs[:] = console_logs[:40]
+
+                    results.append({
+
+                        "match":
+                            f"{home_team} vs {away_team}",
+
+                        "league":
+                            LEAGUE_NAMES.get(
+                                sport,
+                                {}
+                            ).get(
+                                "short",
+                                sport.upper()
                             ),
 
-                        "message":
-                            f"{bookA} updated {home_team} vs {away_team} gap +{gap}"
+                        "leagueName":
+                            LEAGUE_NAMES.get(
+                                sport,
+                                {}
+                            ).get(
+                                "name",
+                                sport.upper()
+                            ),
 
-                    }
+                        "market": market,
 
+                        "line": line,
+
+                        "bookA": bookA,
+                        "bookB": bookB,
+
+                        "awayOddA": awayOddA,
+                        "awayOddB": awayOddB,
+
+                        "homeOddA": homeOddA,
+                        "homeOddB": homeOddB,
+
+                        "gap": gap,
+
+                        "movementScore":
+                            movement_score,
+
+                        "liveStatus":
+                            live_data["liveStatus"],
+
+                        "clock":
+                            live_data["clock"],
+
+                        "displayTime":
+                            live_data["displayTime"],
+
+                        "homeScore":
+                            live_data["homeScore"],
+
+                        "awayScore":
+                            live_data["awayScore"],
+
+                        "timestamp":
+                            int(time.time())
+
+                    })
+
+            except Exception as e:
+
+                print(
+                    f"SPORT ERROR {sport}",
+                    e
                 )
 
-                console_logs[:] = console_logs[:30]
+        results = sorted(
 
-                results.append({
+            results,
 
-                    "match":
-                        f"{home_team} vs {away_team}",
+            key=lambda x: (
 
-                    "league":
-                        LEAGUE_NAMES.get(
-                            sport,
-                            {}
-                        ).get(
-                            "short",
-                            sport.upper()
-                        ),
+                x["liveStatus"] != "LIVE",
 
-                    "leagueName":
-                        LEAGUE_NAMES.get(
-                            sport,
-                            {}
-                        ).get(
-                            "name",
-                            sport.upper()
-                        ),
-
-                    "market": market,
-
-                    "line": line,
-
-                    "bookA": bookA,
-                    "bookB": bookB,
-
-                    "awayOddA": awayOddA,
-                    "awayOddB": awayOddB,
-
-                    "homeOddA": homeOddA,
-                    "homeOddB": homeOddB,
-
-                    "gap": gap,
-
-                    "movementScore":
-                        movement_score,
-
-                    "liveStatus":
-                        live_data["liveStatus"],
-
-                    "clock":
-                        live_data["clock"],
-
-                    "displayTime":
-                        live_data["displayTime"],
-
-                    "homeScore":
-                        live_data["homeScore"],
-
-                    "awayScore":
-                        live_data["awayScore"],
-
-                    "timestamp":
-                        int(time.time())
-
-                })
-
-        def sort_priority(item):
-
-            live_order = {
-
-                "H1": 0,
-                "H2": 1,
-                "HT": 2,
-                "PRE": 3,
-                "FIN": 4
-
-            }
-
-            return (
-
-                live_order.get(
-                    item["liveStatus"],
-                    99
-                ),
-
-                -item.get(
+                -x.get(
                     "movementScore",
                     0
                 ),
 
-                -item["gap"],
-
-                -item["timestamp"]
+                -x["gap"]
 
             )
 
-        cached_matches = sorted(
-            results,
-            key=sort_priority
-        )[:100]
+        )
+
+        cached_matches = results[:120]
 
         with open(
             CACHE_FILE,
@@ -623,12 +652,94 @@ def fetch_odds():
             )
 
         print(
-            f"UPDATED {len(cached_matches)} MATCHES"
+            f"UPDATED {len(cached_matches)} LIVE MATCHES"
         )
 
     except Exception as e:
 
-        print("API ERROR:", e)
+        print("FETCH ERROR", e)
+
+
+def fetch_arbs():
+
+    global arb_cache
+
+    try:
+
+        headers = {
+            "X-API-Key": API_KEY
+        }
+
+        url = (
+            "https://parlay-api.com/v1/"
+            "inplay/arbs"
+        )
+
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=10
+        )
+
+        if response.status_code == 200:
+
+            data = response.json()
+
+            if isinstance(data, list):
+                arb_cache = data[:20]
+
+    except Exception as e:
+
+        print("ARB ERROR", e)
+
+
+def fetch_source_health():
+
+    global source_health_cache
+
+    try:
+
+        headers = {
+            "X-API-Key": API_KEY
+        }
+
+        results = []
+
+        for sport in SPORTS[:10]:
+
+            try:
+
+                url = (
+                    f"https://parlay-api.com/v1/"
+                    f"sports/{sport}/live/source-health"
+                )
+
+                response = requests.get(
+                    url,
+                    headers=headers,
+                    timeout=8
+                )
+
+                if response.status_code == 200:
+
+                    data = response.json()
+
+                    results.append({
+
+                        "sport": sport,
+
+                        "data": data
+
+                    })
+
+            except:
+                pass
+
+        source_health_cache = results
+
+    except Exception as e:
+
+        print("SOURCE HEALTH ERROR", e)
 
 
 @app.route("/")
@@ -638,7 +749,9 @@ def home():
 
         "status": "running",
 
-        "matches": len(cached_matches)
+        "matches": len(cached_matches),
+
+        "arbs": len(arb_cache)
 
     })
 
@@ -659,18 +772,42 @@ def console():
     )
 
 
+@app.route("/arbs")
+def arbs():
+
+    return jsonify(
+        arb_cache
+    )
+
+
+@app.route("/source-health")
+def source_health():
+
+    return jsonify(
+        source_health_cache
+    )
+
+
 def background_loop():
 
     while True:
 
-        fetch_odds()
+        fetch_live_matches()
 
-        time.sleep(6)
+        fetch_arbs()
+
+        fetch_source_health()
+
+        time.sleep(8)
 
 
 if __name__ == "__main__":
 
-    fetch_odds()
+    fetch_live_matches()
+
+    fetch_arbs()
+
+    fetch_source_health()
 
     Thread(
         target=background_loop,
@@ -681,4 +818,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-
