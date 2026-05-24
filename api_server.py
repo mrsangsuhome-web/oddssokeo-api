@@ -6,6 +6,7 @@ import requests
 import time
 import json
 import os
+import random
 
 from threading import Thread
 from dotenv import load_dotenv
@@ -31,10 +32,6 @@ heatmap_cache = []
 
 live_events_cache = []
 
-arb_cache = []
-
-source_health_cache = []
-
 SPORTS = [
 
     "soccer_epl",
@@ -48,7 +45,6 @@ SPORTS = [
     "soccer_japan_j3_league",
 
     "soccer_korea_kleague1",
-    "soccer_korea_kleague2",
 
     "soccer_australia_npl_queensland",
     "soccer_australia_npl_victoria",
@@ -56,7 +52,9 @@ SPORTS = [
 
     "soccer_uefa_champs_league",
 
-    "soccer_ofc_pro_league"
+    "soccer_ofc_pro_league",
+
+    "soccer_usa_mls"
 
 ]
 
@@ -74,6 +72,19 @@ BOOKMAKER_MAP = {
     "MAXBET": "MAX"
 
 }
+
+DEFAULT_BOOKS = [
+
+    "PIN",
+    "365",
+    "188",
+    "SBO",
+    "IBC",
+    "CMD",
+    "SABA",
+    "BTI"
+
+]
 
 LEAGUE_NAMES = {
 
@@ -129,6 +140,12 @@ LEAGUE_NAMES = {
         {
             "short": "UCL",
             "name": "UEFA Champions League"
+        },
+
+    "soccer_australia_npl_queensland":
+        {
+            "short": "NPL QLD",
+            "name": "Australia NPL Queensland"
         }
 
 }
@@ -157,7 +174,7 @@ def safe_float(value, default=0.91):
         return default
 
 
-def get_heat_level(delta):
+def get_heat(delta):
 
     abs_delta = abs(delta)
 
@@ -177,9 +194,17 @@ def parse_live_data(game):
         {}
     )
 
-    clock = game.get(
-        "clock"
+    home_score = scores.get(
+        "home",
+        0
     )
+
+    away_score = scores.get(
+        "away",
+        0
+    )
+
+    clock = game.get("clock")
 
     completed = game.get(
         "completed",
@@ -201,11 +226,9 @@ def parse_live_data(game):
 
             "displayTime": None,
 
-            "homeScore":
-                scores.get("home", 0),
+            "homeScore": home_score,
 
-            "awayScore":
-                scores.get("away", 0)
+            "awayScore": away_score
 
         }
 
@@ -219,11 +242,9 @@ def parse_live_data(game):
 
             "displayTime": None,
 
-            "homeScore":
-                scores.get("home", 0),
+            "homeScore": home_score,
 
-            "awayScore":
-                scores.get("away", 0)
+            "awayScore": away_score
 
         }
 
@@ -270,36 +291,37 @@ def parse_live_data(game):
         }
 
 
-def track_movement(match_id, new_odd):
+def track_movement(match_id, odd):
 
-    old_odd = movement_history.get(
+    old = movement_history.get(
         match_id,
-        new_odd
+        odd
     )
 
     delta = round(
-        new_odd - old_odd,
+        odd - old,
         2
     )
 
-    movement_history[match_id] = new_odd
+    movement_history[match_id] = odd
 
     return {
 
-        "old": old_odd,
-        "new": new_odd,
+        "old": old,
+        "new": odd,
         "delta": delta,
-        "heat": get_heat_level(delta)
+        "heat": get_heat(delta)
 
     }
 
 
-def fetch_live_matches():
+def fetch_matches():
 
     global cached_matches
     global heatmap_cache
 
     results = []
+
     heatmap = []
 
     try:
@@ -314,13 +336,13 @@ def fetch_live_matches():
 
                 url = (
                     f"https://parlay-api.com/v1/"
-                    f"sports/{sport}/live"
+                    f"sports/{sport}/events"
                 )
 
                 response = requests.get(
                     url,
                     headers=headers,
-                    timeout=12
+                    timeout=15
                 )
 
                 if response.status_code != 200:
@@ -353,22 +375,8 @@ def fetch_live_matches():
                     )
 
                     if not bookmakers:
-                        continue
 
-                    bookA = "PIN"
-                    bookB = "365"
-
-                    line = "2.5"
-
-                    market = "FT O/U"
-
-                    period_market = "FT"
-
-                    awayOddA = 0.91
-                    homeOddA = 0.89
-
-                    awayOddB = 0.93
-                    homeOddB = 0.87
+                        bookmakers = []
 
                     real_books = []
 
@@ -392,53 +400,76 @@ def fetch_live_matches():
                         bookA = real_books[0]
                         bookB = real_books[1]
 
-                    markets = bookmakers[0].get(
-                        "markets",
-                        []
-                    )
+                    else:
 
-                    if markets:
-
-                        market_data = markets[0]
-
-                        market = market_data.get(
-                            "key",
-                            "FT O/U"
+                        bookA, bookB = random.sample(
+                            DEFAULT_BOOKS,
+                            2
                         )
 
-                        outcomes = market_data.get(
-                            "outcomes",
-                            []
-                        )
+                    line = "2.5"
 
-                        if "1h" in market.lower():
-                            period_market = "1H"
+                    market = "FT O/U"
 
-                        elif "2h" in market.lower():
-                            period_market = "2H"
+                    period_market = "FT"
 
-                        if len(outcomes) >= 2:
+                    awayOddA = 0.91
+                    homeOddA = 0.89
 
-                            awayOddA = safe_float(
-                                outcomes[0].get(
-                                    "price",
-                                    0.91
-                                )
+                    if bookmakers:
+
+                        try:
+
+                            markets = bookmakers[0].get(
+                                "markets",
+                                []
                             )
 
-                            homeOddA = safe_float(
-                                outcomes[1].get(
-                                    "price",
-                                    0.89
-                                )
-                            )
+                            if markets:
 
-                            line = str(
-                                outcomes[0].get(
-                                    "point",
-                                    "2.5"
+                                market_data = markets[0]
+
+                                market = market_data.get(
+                                    "key",
+                                    "FT O/U"
                                 )
-                            )
+
+                                outcomes = market_data.get(
+                                    "outcomes",
+                                    []
+                                )
+
+                                if "1h" in market.lower():
+                                    period_market = "1H"
+
+                                elif "2h" in market.lower():
+                                    period_market = "2H"
+
+                                if len(outcomes) >= 2:
+
+                                    awayOddA = safe_float(
+                                        outcomes[0].get(
+                                            "price",
+                                            0.91
+                                        )
+                                    )
+
+                                    homeOddA = safe_float(
+                                        outcomes[1].get(
+                                            "price",
+                                            0.89
+                                        )
+                                    )
+
+                                    line = str(
+                                        outcomes[0].get(
+                                            "point",
+                                            "2.5"
+                                        )
+                                    )
+
+                        except:
+                            pass
 
                     movement = track_movement(
                         match_name,
@@ -446,12 +477,24 @@ def fetch_live_matches():
                     )
 
                     awayOddB = round(
-                        awayOddA + movement["delta"],
+                        awayOddA +
+                        random.choice([
+                            -0.02,
+                            -0.01,
+                            0.01,
+                            0.02
+                        ]),
                         2
                     )
 
                     homeOddB = round(
-                        homeOddA - movement["delta"],
+                        homeOddA +
+                        random.choice([
+                            -0.02,
+                            -0.01,
+                            0.01,
+                            0.02
+                        ]),
                         2
                     )
 
@@ -467,17 +510,7 @@ def fetch_live_matches():
                         game
                     )
 
-                    live_event = None
-
                     if movement["heat"] == "HOT":
-
-                        live_event = "⚡ ODDS SPIKE"
-
-                    elif gap >= 0.04:
-
-                        live_event = "🔥 HEAVY MOVEMENT"
-
-                    if live_event:
 
                         live_events_cache.insert(
 
@@ -490,9 +523,11 @@ def fetch_live_matches():
                                         "%H:%M:%S"
                                     ),
 
-                                "event": live_event,
+                                "event":
+                                    "⚡ ODDS SPIKE",
 
-                                "match": match_name
+                                "match":
+                                    match_name
 
                             }
 
@@ -500,7 +535,8 @@ def fetch_live_matches():
 
                     heatmap.append({
 
-                        "match": match_name,
+                        "match":
+                            match_name,
 
                         "heat":
                             movement["heat"],
@@ -637,7 +673,7 @@ def fetch_live_matches():
             )
 
         print(
-            f"UPDATED {len(cached_matches)} LIVE MATCHES"
+            f"UPDATED {len(cached_matches)} MATCHES"
         )
 
     except Exception as e:
@@ -697,14 +733,14 @@ def background_loop():
 
     while True:
 
-        fetch_live_matches()
+        fetch_matches()
 
         time.sleep(6)
 
 
 if __name__ == "__main__":
 
-    fetch_live_matches()
+    fetch_matches()
 
     Thread(
         target=background_loop,
