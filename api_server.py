@@ -34,8 +34,6 @@ live_events_cache = []
 
 SPORTS = [
 
-    # EUROPE
-
     "soccer_epl",
     "soccer_england_championship",
     "soccer_england_league1",
@@ -73,37 +71,21 @@ SPORTS = [
     "soccer_sweden_superettan",
 
     "soccer_norway_eliteserien",
-    "soccer_norway_division_1",
-
     "soccer_denmark_superliga",
-    "soccer_denmark_division_1",
-
-    # UEFA
 
     "soccer_uefa_champs_league",
     "soccer_uefa_europa_league",
     "soccer_uefa_europa_conference_league",
-
-    # WORLD
-
-    "soccer_fifa_world_cup",
-    "soccer_fifa_world_cup_women",
-
-    # AMERICA
 
     "soccer_usa_mls",
 
     "soccer_mexico_ligamx",
 
     "soccer_brazil_campeonato",
-    "soccer_brazil_serie_b",
 
     "soccer_argentina_primera_division",
-    "soccer_argentina_primera_b",
 
     "soccer_chile_campeonato",
-
-    # ASIA
 
     "soccer_japan_j_league",
     "soccer_japan_j2_league",
@@ -115,9 +97,6 @@ SPORTS = [
     "soccer_korea_kleague2",
 
     "soccer_china_superleague",
-    "soccer_china_league_one",
-
-    # AUSTRALIA
 
     "soccer_australia_aleague",
 
@@ -129,8 +108,6 @@ SPORTS = [
     "soccer_australia_npl_nsw_u20",
 
     "soccer_australia_queensland_premier_league",
-
-    # OCEANIA
 
     "soccer_ofc_pro_league"
 
@@ -178,28 +155,10 @@ LEAGUE_NAMES = {
             "name": "England Championship"
         },
 
-    "soccer_england_league1":
-        {
-            "short": "L1",
-            "name": "England League One"
-        },
-
-    "soccer_england_league2":
-        {
-            "short": "L2",
-            "name": "England League Two"
-        },
-
     "soccer_spain_la_liga":
         {
             "short": "LAL",
             "name": "Spain La Liga"
-        },
-
-    "soccer_spain_segunda_division":
-        {
-            "short": "LAL2",
-            "name": "Spain Segunda Division"
         },
 
     "soccer_germany_bundesliga":
@@ -208,22 +167,10 @@ LEAGUE_NAMES = {
             "name": "Germany Bundesliga"
         },
 
-    "soccer_germany_bundesliga2":
-        {
-            "short": "BUN2",
-            "name": "Germany Bundesliga 2"
-        },
-
     "soccer_italy_serie_a":
         {
             "short": "SA",
             "name": "Italy Serie A"
-        },
-
-    "soccer_italy_serie_b":
-        {
-            "short": "SB",
-            "name": "Italy Serie B"
         },
 
     "soccer_france_ligue_one":
@@ -232,130 +179,16 @@ LEAGUE_NAMES = {
             "name": "France Ligue 1"
         },
 
-    "soccer_france_ligue_two":
-        {
-            "short": "L2",
-            "name": "France Ligue 2"
-        },
-
-    "soccer_portugal_primeira_liga":
-        {
-            "short": "POR",
-            "name": "Portugal Primeira Liga"
-        },
-
-    "soccer_netherlands_eredivisie":
-        {
-            "short": "NED",
-            "name": "Netherlands Eredivisie"
-        },
-
-    "soccer_belgium_first_div":
-        {
-            "short": "BEL",
-            "name": "Belgium First Division"
-        },
-
-    "soccer_turkey_super_lig":
-        {
-            "short": "TUR",
-            "name": "Turkey Super Lig"
-        },
-
-    "soccer_scotland_premiership":
-        {
-            "short": "SCO",
-            "name": "Scotland Premiership"
-        },
-
-    "soccer_switzerland_superleague":
-        {
-            "short": "SUI",
-            "name": "Switzerland Super League"
-        },
-
-    "soccer_austria_bundesliga":
-        {
-            "short": "AUT",
-            "name": "Austria Bundesliga"
-        },
-
-    "soccer_poland_ekstraklasa":
-        {
-            "short": "POL",
-            "name": "Poland Ekstraklasa"
-        },
-
-    "soccer_sweden_allsvenskan":
-        {
-            "short": "SWE",
-            "name": "Sweden Allsvenskan"
-        },
-
-    "soccer_sweden_superettan":
-        {
-            "short": "SWE2",
-            "name": "Sweden Superettan"
-        },
-
-    "soccer_norway_eliteserien":
-        {
-            "short": "NOR",
-            "name": "Norway Eliteserien"
-        },
-
-    "soccer_denmark_superliga":
-        {
-            "short": "DEN",
-            "name": "Denmark Superliga"
-        },
-
     "soccer_uefa_champs_league":
         {
             "short": "UCL",
             "name": "UEFA Champions League"
         },
 
-    "soccer_uefa_europa_league":
-        {
-            "short": "UEL",
-            "name": "UEFA Europa League"
-        },
-
-    "soccer_uefa_europa_conference_league":
-        {
-            "short": "UECL",
-            "name": "UEFA Europa Conference League"
-        },
-
     "soccer_usa_mls":
         {
             "short": "MLS",
             "name": "USA Major League Soccer"
-        },
-
-    "soccer_mexico_ligamx":
-        {
-            "short": "MEX",
-            "name": "Mexico Liga MX"
-        },
-
-    "soccer_brazil_campeonato":
-        {
-            "short": "BRA",
-            "name": "Brazil Serie A"
-        },
-
-    "soccer_argentina_primera_division":
-        {
-            "short": "ARG",
-            "name": "Argentina Primera Division"
-        },
-
-    "soccer_chile_campeonato":
-        {
-            "short": "CHI",
-            "name": "Chile Campeonato"
         },
 
     "soccer_japan_j_league":
@@ -382,22 +215,10 @@ LEAGUE_NAMES = {
             "name": "Korea K League 1"
         },
 
-    "soccer_korea_kleague2":
-        {
-            "short": "K2",
-            "name": "Korea K League 2"
-        },
-
     "soccer_china_superleague":
         {
             "short": "CSL",
             "name": "China Super League"
-        },
-
-    "soccer_australia_aleague":
-        {
-            "short": "AUS",
-            "name": "Australia A League"
         },
 
     "soccer_australia_npl_queensland":
@@ -465,52 +286,62 @@ def get_heat(delta):
 
 def parse_live_data(game):
 
-    scores = game.get("scores", {})
-
-    home_score = scores.get("home", 0)
-
-    away_score = scores.get("away", 0)
-
-    clock = game.get("clock")
-
-    completed = game.get("completed", False)
+    completed = game.get(
+        "completed",
+        False
+    )
 
     commence_time = game.get(
         "commence_time",
         ""
     )
 
-    if completed:
+    scores = game.get(
+        "scores",
+        []
+    )
 
-        return {
+    home_score = 0
+    away_score = 0
 
-            "status": "FIN",
+    try:
 
-            "clock": "FT",
+        if isinstance(scores, list):
 
-            "displayTime": None,
+            if len(scores) >= 2:
 
-            "homeScore": home_score,
+                home_score = int(
+                    scores[0].get(
+                        "score",
+                        0
+                    )
+                )
 
-            "awayScore": away_score
+                away_score = int(
+                    scores[1].get(
+                        "score",
+                        0
+                    )
+                )
 
-        }
+        elif isinstance(scores, dict):
 
-    if clock:
+            home_score = int(
+                scores.get(
+                    "home",
+                    0
+                )
+            )
 
-        return {
+            away_score = int(
+                scores.get(
+                    "away",
+                    0
+                )
+            )
 
-            "status": "LIVE",
-
-            "clock": clock,
-
-            "displayTime": None,
-
-            "homeScore": home_score,
-
-            "awayScore": away_score
-
-        }
+    except:
+        pass
 
     try:
 
@@ -520,6 +351,54 @@ def parse_live_data(game):
                 "+00:00"
             )
         )
+
+        now = datetime.utcnow().replace(
+            tzinfo=match_time.tzinfo
+        )
+
+        if completed:
+
+            return {
+
+                "status": "FIN",
+
+                "clock": "FT",
+
+                "displayTime": None,
+
+                "homeScore": home_score,
+
+                "awayScore": away_score
+
+            }
+
+        if match_time <= now:
+
+            minutes_live = int(
+                (
+                    now - match_time
+                ).total_seconds() / 60
+            )
+
+            if minutes_live > 120:
+                minutes_live = 90
+
+            if minutes_live < 1:
+                minutes_live = 1
+
+            return {
+
+                "status": "LIVE",
+
+                "clock": f"{minutes_live}'",
+
+                "displayTime": None,
+
+                "homeScore": home_score,
+
+                "awayScore": away_score
+
+            }
 
         return {
 
