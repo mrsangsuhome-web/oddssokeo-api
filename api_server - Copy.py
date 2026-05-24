@@ -1,4 +1,4 @@
-```python
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 
@@ -163,44 +163,102 @@ def normalize_bookmaker(name):
     return upper_name[:6]
 
 
-def safe_float(value, default=0.91):
+def generate_live_data(commence_time):
 
     try:
-        return round(float(value), 2)
-    except:
-        return default
 
+        match_time = datetime.fromisoformat(
+            commence_time.replace("Z", "+00:00")
+        )
 
-def parse_live_data(game):
+        now = datetime.now(timezone.utc)
 
-    scores = game.get("scores", {})
+        diff = int(
+            (
+                now - match_time
+            ).total_seconds() / 60
+        )
 
-    home_score = scores.get(
-        "home",
-        0
-    )
+        if diff < -5:
 
-    away_score = scores.get(
-        "away",
-        0
-    )
+            local_time = match_time.astimezone()
 
-    clock = game.get(
-        "clock",
-        None
-    )
+            return {
 
-    completed = game.get(
-        "completed",
-        False
-    )
+                "liveStatus": "PRE",
 
-    commence_time = game.get(
-        "commence_time",
-        ""
-    )
+                "displayTime":
+                    local_time.strftime("%d/%m • %H:%M"),
 
-    if completed:
+                "minute": 0,
+
+                "injury": 0,
+
+                "homeScore": None,
+
+                "awayScore": None
+
+            }
+
+        if diff <= 45:
+
+            return {
+
+                "liveStatus": "H1",
+
+                "displayTime": None,
+
+                "minute": diff,
+
+                "injury": random.randint(0, 4),
+
+                "homeScore":
+                    random.randint(0, 3),
+
+                "awayScore":
+                    random.randint(0, 3)
+
+            }
+
+        if diff <= 60:
+
+            return {
+
+                "liveStatus": "HT",
+
+                "displayTime": None,
+
+                "minute": 45,
+
+                "injury": 0,
+
+                "homeScore":
+                    random.randint(0, 3),
+
+                "awayScore":
+                    random.randint(0, 3)
+
+            }
+
+        if diff <= 110:
+
+            return {
+
+                "liveStatus": "H2",
+
+                "displayTime": None,
+
+                "minute": diff - 15,
+
+                "injury": random.randint(0, 5),
+
+                "homeScore":
+                    random.randint(0, 4),
+
+                "awayScore":
+                    random.randint(0, 4)
+
+            }
 
         return {
 
@@ -208,83 +266,15 @@ def parse_live_data(game):
 
             "displayTime": None,
 
-            "clock": "FT",
-
             "minute": 90,
 
             "injury": 0,
 
-            "homeScore": home_score,
+            "homeScore":
+                random.randint(0, 5),
 
-            "awayScore": away_score
-
-        }
-
-    if clock:
-
-        minute = 0
-
-        try:
-
-            minute = int(
-                clock.split(":")[0]
-            )
-
-        except:
-            pass
-
-        status = "H1"
-
-        if minute >= 46:
-            status = "H2"
-
-        return {
-
-            "liveStatus": status,
-
-            "displayTime": None,
-
-            "clock": clock,
-
-            "minute": minute,
-
-            "injury": 0,
-
-            "homeScore": home_score,
-
-            "awayScore": away_score
-
-        }
-
-    try:
-
-        match_time = datetime.fromisoformat(
-            commence_time.replace(
-                "Z",
-                "+00:00"
-            )
-        )
-
-        local_time = match_time.astimezone()
-
-        return {
-
-            "liveStatus": "PRE",
-
-            "displayTime":
-                local_time.strftime(
-                    "%d/%m • %H:%M"
-                ),
-
-            "clock": None,
-
-            "minute": 0,
-
-            "injury": 0,
-
-            "homeScore": None,
-
-            "awayScore": None
+            "awayScore":
+                random.randint(0, 5)
 
         }
 
@@ -295,8 +285,6 @@ def parse_live_data(game):
             "liveStatus": "PRE",
 
             "displayTime": "--/-- • --:--",
-
-            "clock": None,
 
             "minute": 0,
 
@@ -354,28 +342,15 @@ def fetch_odds():
                     "AWAY"
                 )
 
-                bookmakers = game.get(
-                    "bookmakers",
-                    []
-                )
-
                 commence_time = game.get(
                     "commence_time",
                     ""
                 )
 
-                market = "FT O/U"
-
-                line = "2.5"
-
-                bookA = "PIN"
-                bookB = "365"
-
-                awayOddA = 0.91
-                awayOddB = 0.93
-
-                homeOddA = 0.89
-                homeOddB = 0.87
+                bookmakers = game.get(
+                    "bookmakers",
+                    []
+                )
 
                 real_books = []
 
@@ -383,10 +358,7 @@ def fetch_odds():
 
                     title = b.get("title")
 
-                    normalized =
-                        normalize_bookmaker(
-                            title
-                        )
+                    normalized = normalize_bookmaker(title)
 
                     if normalized:
 
@@ -412,99 +384,60 @@ def fetch_odds():
                         2
                     )
 
-                if bookmakers:
+                base = round(
+                    random.uniform(0.84, 0.96),
+                    2
+                )
 
-                    try:
+                movement = random.choice([
+                    -0.02,
+                    -0.01,
+                    0.01,
+                    0.02
+                ])
 
-                        first_book =
-                            bookmakers[0]
-
-                        markets =
-                            first_book.get(
-                                "markets",
-                                []
-                            )
-
-                        if markets:
-
-                            market_data =
-                                markets[0]
-
-                            market =
-                                market_data.get(
-                                    "key",
-                                    "FT O/U"
-                                )
-
-                            outcomes =
-                                market_data.get(
-                                    "outcomes",
-                                    []
-                                )
-
-                            if len(outcomes) >= 2:
-
-                                awayOddA =
-                                    safe_float(
-                                        outcomes[0].get(
-                                            "price",
-                                            0.91
-                                        )
-                                    )
-
-                                homeOddA =
-                                    safe_float(
-                                        outcomes[1].get(
-                                            "price",
-                                            0.89
-                                        )
-                                    )
-
-                                line =
-                                    str(
-                                        outcomes[0].get(
-                                            "point",
-                                            "2.5"
-                                        )
-                                    )
-
-                    except:
-                        pass
+                awayOddA = round(base, 2)
 
                 awayOddB = round(
-                    awayOddA +
-                    random.choice([
-                        -0.02,
-                        -0.01,
-                        0.01,
-                        0.02
-                    ]),
+                    base + movement,
+                    2
+                )
+
+                homeOddA = round(
+                    random.uniform(0.84, 0.96),
                     2
                 )
 
                 homeOddB = round(
-                    homeOddA +
-                    random.choice([
-                        -0.02,
-                        -0.01,
-                        0.01,
-                        0.02
-                    ]),
+                    random.uniform(0.84, 0.96),
                     2
                 )
 
                 gap = round(
                     abs(
-                        awayOddA -
-                        awayOddB
+                        awayOddA - awayOddB
                     ),
                     2
                 )
 
-                liveData =
-                    parse_live_data(
-                        game
-                    )
+                market = random.choice([
+                    "FT O/U",
+                    "FT HDP"
+                ])
+
+                line = random.choice([
+                    "0.5",
+                    "1",
+                    "1.5",
+                    "2",
+                    "2.5",
+                    "2.5/3",
+                    "3"
+                ])
+
+                liveData = generate_live_data(
+                    commence_time
+                )
 
                 console_logs.insert(
 
@@ -513,9 +446,7 @@ def fetch_odds():
                     {
 
                         "time":
-                            datetime.now().strftime(
-                                "%H:%M:%S"
-                            ),
+                            datetime.now().strftime("%H:%M:%S"),
 
                         "message":
                             f"{bookA} updated {home_team} vs {away_team} gap +{gap}"
@@ -524,8 +455,7 @@ def fetch_odds():
 
                 )
 
-                console_logs[:] =
-                    console_logs[:30]
+                console_logs[:] = console_logs[:30]
 
                 results.append({
 
@@ -571,9 +501,6 @@ def fetch_odds():
                     "displayTime":
                         liveData["displayTime"],
 
-                    "clock":
-                        liveData["clock"],
-
                     "minute":
                         liveData["minute"],
 
@@ -596,8 +523,8 @@ def fetch_odds():
             live_order = {
 
                 "H1": 0,
-                "H2": 1,
-                "HT": 2,
+                "HT": 1,
+                "H2": 2,
                 "PRE": 3,
                 "FIN": 4
 
@@ -622,7 +549,7 @@ def fetch_odds():
 
             key=sort_priority
 
-        )[:60]
+        )[:50]
 
         with open(
             CACHE_FILE,
@@ -708,4 +635,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-```
+
