@@ -34,27 +34,105 @@ live_events_cache = []
 
 SPORTS = [
 
+    # EUROPE
+
     "soccer_epl",
-    "soccer_usa_mls",
+    "soccer_england_championship",
+    "soccer_england_league1",
+    "soccer_england_league2",
+
     "soccer_spain_la_liga",
+    "soccer_spain_segunda_division",
+
     "soccer_germany_bundesliga",
+    "soccer_germany_bundesliga2",
+
     "soccer_italy_serie_a",
+    "soccer_italy_serie_b",
+
+    "soccer_france_ligue_one",
+    "soccer_france_ligue_two",
+
+    "soccer_portugal_primeira_liga",
+
+    "soccer_netherlands_eredivisie",
+
+    "soccer_belgium_first_div",
+
+    "soccer_turkey_super_lig",
+
+    "soccer_scotland_premiership",
+
+    "soccer_switzerland_superleague",
+
+    "soccer_austria_bundesliga",
+
+    "soccer_poland_ekstraklasa",
+
+    "soccer_sweden_allsvenskan",
+    "soccer_sweden_superettan",
+
+    "soccer_norway_eliteserien",
+    "soccer_norway_division_1",
+
+    "soccer_denmark_superliga",
+    "soccer_denmark_division_1",
+
+    # UEFA
+
+    "soccer_uefa_champs_league",
+    "soccer_uefa_europa_league",
+    "soccer_uefa_europa_conference_league",
+
+    # WORLD
+
+    "soccer_fifa_world_cup",
+    "soccer_fifa_world_cup_women",
+
+    # AMERICA
+
+    "soccer_usa_mls",
+
+    "soccer_mexico_ligamx",
+
+    "soccer_brazil_campeonato",
+    "soccer_brazil_serie_b",
+
+    "soccer_argentina_primera_division",
+    "soccer_argentina_primera_b",
+
+    "soccer_chile_campeonato",
+
+    # ASIA
 
     "soccer_japan_j_league",
     "soccer_japan_j2_league",
     "soccer_japan_j3_league",
 
+    "soccer_japan_nadeshiko_league_women",
+
     "soccer_korea_kleague1",
+    "soccer_korea_kleague2",
+
+    "soccer_china_superleague",
+    "soccer_china_league_one",
+
+    # AUSTRALIA
+
+    "soccer_australia_aleague",
 
     "soccer_australia_npl_queensland",
+    "soccer_australia_npl_nsw",
     "soccer_australia_npl_victoria",
     "soccer_australia_npl_tasmania",
 
-    "soccer_uefa_champs_league",
+    "soccer_australia_npl_nsw_u20",
 
-    "soccer_ofc_pro_league",
+    "soccer_australia_queensland_premier_league",
 
-    "soccer_usa_mls"
+    # OCEANIA
+
+    "soccer_ofc_pro_league"
 
 ]
 
@@ -94,10 +172,22 @@ LEAGUE_NAMES = {
             "name": "England Premier League"
         },
 
-    "soccer_usa_mls":
+    "soccer_england_championship":
         {
-            "short": "MLS",
-            "name": "USA Major League Soccer"
+            "short": "EFL",
+            "name": "England Championship"
+        },
+
+    "soccer_england_league1":
+        {
+            "short": "L1",
+            "name": "England League One"
+        },
+
+    "soccer_england_league2":
+        {
+            "short": "L2",
+            "name": "England League Two"
         },
 
     "soccer_spain_la_liga":
@@ -106,16 +196,166 @@ LEAGUE_NAMES = {
             "name": "Spain La Liga"
         },
 
+    "soccer_spain_segunda_division":
+        {
+            "short": "LAL2",
+            "name": "Spain Segunda Division"
+        },
+
     "soccer_germany_bundesliga":
         {
             "short": "BUN",
             "name": "Germany Bundesliga"
         },
 
+    "soccer_germany_bundesliga2":
+        {
+            "short": "BUN2",
+            "name": "Germany Bundesliga 2"
+        },
+
     "soccer_italy_serie_a":
         {
             "short": "SA",
             "name": "Italy Serie A"
+        },
+
+    "soccer_italy_serie_b":
+        {
+            "short": "SB",
+            "name": "Italy Serie B"
+        },
+
+    "soccer_france_ligue_one":
+        {
+            "short": "L1",
+            "name": "France Ligue 1"
+        },
+
+    "soccer_france_ligue_two":
+        {
+            "short": "L2",
+            "name": "France Ligue 2"
+        },
+
+    "soccer_portugal_primeira_liga":
+        {
+            "short": "POR",
+            "name": "Portugal Primeira Liga"
+        },
+
+    "soccer_netherlands_eredivisie":
+        {
+            "short": "NED",
+            "name": "Netherlands Eredivisie"
+        },
+
+    "soccer_belgium_first_div":
+        {
+            "short": "BEL",
+            "name": "Belgium First Division"
+        },
+
+    "soccer_turkey_super_lig":
+        {
+            "short": "TUR",
+            "name": "Turkey Super Lig"
+        },
+
+    "soccer_scotland_premiership":
+        {
+            "short": "SCO",
+            "name": "Scotland Premiership"
+        },
+
+    "soccer_switzerland_superleague":
+        {
+            "short": "SUI",
+            "name": "Switzerland Super League"
+        },
+
+    "soccer_austria_bundesliga":
+        {
+            "short": "AUT",
+            "name": "Austria Bundesliga"
+        },
+
+    "soccer_poland_ekstraklasa":
+        {
+            "short": "POL",
+            "name": "Poland Ekstraklasa"
+        },
+
+    "soccer_sweden_allsvenskan":
+        {
+            "short": "SWE",
+            "name": "Sweden Allsvenskan"
+        },
+
+    "soccer_sweden_superettan":
+        {
+            "short": "SWE2",
+            "name": "Sweden Superettan"
+        },
+
+    "soccer_norway_eliteserien":
+        {
+            "short": "NOR",
+            "name": "Norway Eliteserien"
+        },
+
+    "soccer_denmark_superliga":
+        {
+            "short": "DEN",
+            "name": "Denmark Superliga"
+        },
+
+    "soccer_uefa_champs_league":
+        {
+            "short": "UCL",
+            "name": "UEFA Champions League"
+        },
+
+    "soccer_uefa_europa_league":
+        {
+            "short": "UEL",
+            "name": "UEFA Europa League"
+        },
+
+    "soccer_uefa_europa_conference_league":
+        {
+            "short": "UECL",
+            "name": "UEFA Europa Conference League"
+        },
+
+    "soccer_usa_mls":
+        {
+            "short": "MLS",
+            "name": "USA Major League Soccer"
+        },
+
+    "soccer_mexico_ligamx":
+        {
+            "short": "MEX",
+            "name": "Mexico Liga MX"
+        },
+
+    "soccer_brazil_campeonato":
+        {
+            "short": "BRA",
+            "name": "Brazil Serie A"
+        },
+
+    "soccer_argentina_primera_division":
+        {
+            "short": "ARG",
+            "name": "Argentina Primera Division"
+        },
+
+    "soccer_chile_campeonato":
+        {
+            "short": "CHI",
+            "name": "Chile Campeonato"
         },
 
     "soccer_japan_j_league":
@@ -136,16 +376,52 @@ LEAGUE_NAMES = {
             "name": "Japan J3 League"
         },
 
-    "soccer_uefa_champs_league":
+    "soccer_korea_kleague1":
         {
-            "short": "UCL",
-            "name": "UEFA Champions League"
+            "short": "K1",
+            "name": "Korea K League 1"
+        },
+
+    "soccer_korea_kleague2":
+        {
+            "short": "K2",
+            "name": "Korea K League 2"
+        },
+
+    "soccer_china_superleague":
+        {
+            "short": "CSL",
+            "name": "China Super League"
+        },
+
+    "soccer_australia_aleague":
+        {
+            "short": "AUS",
+            "name": "Australia A League"
         },
 
     "soccer_australia_npl_queensland":
         {
             "short": "NPL QLD",
             "name": "Australia NPL Queensland"
+        },
+
+    "soccer_australia_npl_victoria":
+        {
+            "short": "NPL VIC",
+            "name": "Australia NPL Victoria"
+        },
+
+    "soccer_australia_npl_tasmania":
+        {
+            "short": "NPL TAS",
+            "name": "Australia NPL Tasmania"
+        },
+
+    "soccer_ofc_pro_league":
+        {
+            "short": "OFC",
+            "name": "OFC Pro League"
         }
 
 }
@@ -189,27 +465,15 @@ def get_heat(delta):
 
 def parse_live_data(game):
 
-    scores = game.get(
-        "scores",
-        {}
-    )
+    scores = game.get("scores", {})
 
-    home_score = scores.get(
-        "home",
-        0
-    )
+    home_score = scores.get("home", 0)
 
-    away_score = scores.get(
-        "away",
-        0
-    )
+    away_score = scores.get("away", 0)
 
     clock = game.get("clock")
 
-    completed = game.get(
-        "completed",
-        False
-    )
+    completed = game.get("completed", False)
 
     commence_time = game.get(
         "commence_time",
@@ -308,8 +572,11 @@ def track_movement(match_id, odd):
     return {
 
         "old": old,
+
         "new": odd,
+
         "delta": delta,
+
         "heat": get_heat(delta)
 
     }
@@ -373,10 +640,6 @@ def fetch_matches():
                         "bookmakers",
                         []
                     )
-
-                    if not bookmakers:
-
-                        bookmakers = []
 
                     real_books = []
 
@@ -658,7 +921,7 @@ def fetch_matches():
 
         )
 
-        cached_matches = results[:120]
+        cached_matches = results[:150]
 
         heatmap_cache = heatmap[:50]
 
