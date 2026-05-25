@@ -26,193 +26,46 @@ cached_matches = []
 
 console_logs = []
 
+movement_history = {}
+
 heatmap_cache = []
 
 live_events_cache = []
 
-movement_history = {}
-
 SPORTS = [
 
-    # ENGLAND
-
     "soccer_epl",
-    "soccer_england_championship",
-    "soccer_england_league1",
-    "soccer_england_league2",
-
-    # SPAIN
-
     "soccer_spain_la_liga",
-    "soccer_spain_segunda_division",
-
-    # GERMANY
-
     "soccer_germany_bundesliga",
-    "soccer_germany_bundesliga2",
-
-    # ITALY
-
     "soccer_italy_serie_a",
-    "soccer_italy_serie_b",
-
-    # FRANCE
-
     "soccer_france_ligue_one",
-    "soccer_france_ligue_two",
-
-    # PORTUGAL
-
-    "soccer_portugal_primeira_liga",
-
-    # NETHERLANDS
-
-    "soccer_netherlands_eredivisie",
-
-    # BELGIUM
-
-    "soccer_belgium_first_div",
-
-    # TURKEY
-
-    "soccer_turkey_super_lig",
-
-    # SCOTLAND
-
-    "soccer_scotland_premiership",
-
-    # SWITZERLAND
-
-    "soccer_switzerland_superleague",
-
-    # AUSTRIA
-
-    "soccer_austria_bundesliga",
-
-    # POLAND
-
-    "soccer_poland_ekstraklasa",
-
-    # SWEDEN
-
-    "soccer_sweden_allsvenskan",
-    "soccer_sweden_superettan",
-
-    # NORWAY
-
-    "soccer_norway_eliteserien",
-
-    # DENMARK
-
-    "soccer_denmark_superliga",
-
-    # UEFA
-
-    "soccer_uefa_champs_league",
-    "soccer_uefa_europa_league",
-    "soccer_uefa_europa_conference_league",
-
-    # USA
 
     "soccer_usa_mls",
-
-    # MEXICO
-
-    "soccer_mexico_ligamx",
-
-    # BRAZIL
-
     "soccer_brazil_campeonato",
-
-    # ARGENTINA
-
     "soccer_argentina_primera_division",
 
-    # CHILE
-
-    "soccer_chile_campeonato",
-
-    # JAPAN
-
     "soccer_japan_j_league",
-    "soccer_japan_j2_league",
-    "soccer_japan_j3_league",
-
-    # JAPAN WOMEN
-
-    "soccer_japan_nadeshiko_league_women",
-
-    # KOREA
-
     "soccer_korea_kleague1",
-    "soccer_korea_kleague2",
-
-    # CHINA
-
     "soccer_china_superleague",
-
-    # AUSTRALIA
 
     "soccer_australia_aleague",
 
-    # AUSTRALIA NPL
+    "soccer_uefa_champs_league",
+    "soccer_uefa_europa_league",
 
-    "soccer_australia_npl_queensland",
-    "soccer_australia_npl_nsw",
-    "soccer_australia_npl_victoria",
-    "soccer_australia_npl_tasmania",
+    "soccer_england_championship",
 
-    # AUSTRALIA U20
-
-    "soccer_australia_npl_nsw_u20",
-
-    # AUSTRALIA QPL
-
-    "soccer_australia_queensland_premier_league",
-
-    # OCEANIA
-
-    "soccer_ofc_pro_league"
+    "soccer_netherlands_eredivisie",
+    "soccer_belgium_first_div"
 
 ]
 
-BOOKMAKER_MAP = {
-
-    "PINNACLE": "PIN",
-    "BET365": "365",
-    "188BET": "188",
-    "SBOBET": "SBO",
-    "IBCBET": "IBC",
-    "CMD368": "CMD",
-    "SABA SPORTS": "SABA",
-    "BETINASIA": "BTI"
-
-}
-
-DEFAULT_BOOKS = [
-
-    "PIN",
-    "365",
-    "188",
-    "SBO",
-    "IBC",
-    "CMD",
-    "SABA",
-    "BTI"
-
-]
 LEAGUE_NAMES = {
 
     "soccer_epl":
         {
             "short": "EPL",
             "name": "England Premier League"
-        },
-
-    "soccer_england_championship":
-        {
-            "short": "EFL",
-            "name": "England Championship"
         },
 
     "soccer_spain_la_liga":
@@ -245,36 +98,6 @@ LEAGUE_NAMES = {
             "name": "USA Major League Soccer"
         },
 
-    "soccer_japan_j_league":
-        {
-            "short": "J1",
-            "name": "Japan J1 League"
-        },
-
-    "soccer_korea_kleague1":
-        {
-            "short": "K1",
-            "name": "Korea K League 1"
-        },
-
-    "soccer_china_superleague":
-        {
-            "short": "CSL",
-            "name": "China Super League"
-        },
-
-    "soccer_netherlands_eredivisie":
-        {
-            "short": "NED",
-            "name": "Netherlands Eredivisie"
-        },
-
-    "soccer_belgium_first_div":
-        {
-            "short": "BEL",
-            "name": "Belgium First Division"
-        },
-
     "soccer_uefa_champs_league":
         {
             "short": "UCL",
@@ -282,6 +105,19 @@ LEAGUE_NAMES = {
         }
 
 }
+
+BOOKS = [
+
+    "PIN",
+    "365",
+    "188",
+    "SBO",
+    "IBC",
+    "CMD",
+    "SABA",
+    "BTI"
+
+]
 
 
 def add_console_log(message):
@@ -299,21 +135,6 @@ def add_console_log(message):
     })
 
     console_logs = console_logs[:100]
-
-
-def normalize_bookmaker(name):
-
-    if not name:
-        return None
-
-    upper_name = str(name).upper()
-
-    for key, short in BOOKMAKER_MAP.items():
-
-        if key in upper_name:
-            return short
-
-    return upper_name[:6]
 
 
 def get_heat(delta):
@@ -339,7 +160,7 @@ def track_movement(match_key, odd):
 
     movement_history[match_key].append(odd)
 
-    movement_history[match_key] = movement_history[match_key][-8:]
+    movement_history[match_key] = movement_history[match_key][-10:]
 
     history = movement_history[match_key]
 
@@ -389,35 +210,21 @@ def parse_live_data(game):
 
         if isinstance(scores, list):
 
-            for s in scores:
+            if len(scores) >= 2:
 
-                score_name = str(
-                    s.get("name", "")
-                ).lower()
-
-                score_value = int(
-                    s.get("score", 0)
+                home_score = int(
+                    scores[0].get(
+                        "score",
+                        0
+                    )
                 )
 
-                home_name = str(
-                    game.get(
-                        "home_team",
-                        ""
+                away_score = int(
+                    scores[1].get(
+                        "score",
+                        0
                     )
-                ).lower()
-
-                away_name = str(
-                    game.get(
-                        "away_team",
-                        ""
-                    )
-                ).lower()
-
-                if home_name in score_name:
-                    home_score = score_value
-
-                if away_name in score_name:
-                    away_score = score_value
+                )
 
     except:
         pass
@@ -459,7 +266,7 @@ def parse_live_data(game):
                 ).total_seconds() / 60
             )
 
-            if minutes_live >= 115:
+            if minutes_live >= 120:
 
                 return {
 
@@ -477,27 +284,25 @@ def parse_live_data(game):
 
             if minutes_live <= 45:
 
-                display_clock = f"{minutes_live}'"
+                live_clock = f"{minutes_live}'"
 
             elif minutes_live <= 60:
 
-                display_clock = "HT"
+                live_clock = "HT"
 
             elif minutes_live <= 105:
 
-                second_half = minutes_live - 15
-
-                display_clock = f"{second_half}'"
+                live_clock = f"{minutes_live - 15}'"
 
             else:
 
-                display_clock = "90+'"
+                live_clock = "90+'"
 
             return {
 
                 "status": "LIVE",
 
-                "clock": display_clock,
+                "clock": live_clock,
 
                 "displayTime": None,
 
@@ -532,7 +337,7 @@ def parse_live_data(game):
 
             "clock": None,
 
-            "displayTime": "--/-- • --:--",
+            "displayTime": "--/--",
 
             "homeScore": None,
 
@@ -553,7 +358,7 @@ def fetch_matches():
 
     live_events = []
 
-    seen_matches = set()
+    seen = set()
 
     try:
 
@@ -586,103 +391,65 @@ def fetch_matches():
 
                 for game in data:
 
-                    home_team = game.get(
+                    home = game.get(
                         "home_team",
                         "HOME"
                     )
 
-                    away_team = game.get(
+                    away = game.get(
                         "away_team",
                         "AWAY"
                     )
 
-                    match_name = (
-                        f"{home_team} vs {away_team}"
-                    )
+                    match = f"{home} vs {away}"
 
-                    lower_match = match_name.lower()
+                    lower_match = match.lower()
 
-                    banned_keywords = [
+                    banned = [
 
                         "(bookings)",
-                        "booking",
-
                         "(corners)",
-                        "corner",
-
                         "(cards)",
-                        "card",
-
-                        "(shots)",
-                        "shots",
-
-                        "(offsides)",
-                        "offside"
+                        "booking",
+                        "corner",
+                        "card"
 
                     ]
 
                     if any(
-                        k in lower_match
-                        for k in banned_keywords
+                        b in lower_match
+                        for b in banned
                     ):
                         continue
 
-                    normalized_match = (
-                        match_name
+                    normalized = (
+                        match
                         .replace("FC ", "")
-                        .replace("CF ", "")
                         .replace("United", "Utd")
-                        .replace("Wolverhampton", "Wolves")
                         .replace("Hotspur", "")
+                        .replace("Wolverhampton", "Wolves")
                         .strip()
                         .lower()
                     )
 
-                    if normalized_match in seen_matches:
+                    if normalized in seen:
                         continue
 
-                    seen_matches.add(
-                        normalized_match
+                    seen.add(normalized)
+
+                    live_data = parse_live_data(
+                        game
                     )
 
-                    bookmakers = game.get(
-                        "bookmakers",
-                        []
+                    bookA, bookB = random.sample(
+                        BOOKS,
+                        2
                     )
-
-                    real_books = []
-
-                    for b in bookmakers:
-
-                        normalized = normalize_bookmaker(
-                            b.get("title")
-                        )
-
-                        if normalized:
-                            real_books.append(
-                                normalized
-                            )
-
-                    real_books = list(
-                        set(real_books)
-                    )
-
-                    if len(real_books) >= 2:
-
-                        bookA = real_books[0]
-                        bookB = real_books[1]
-
-                    else:
-
-                        bookA, bookB = random.sample(
-                            DEFAULT_BOOKS,
-                            2
-                        )
 
                     odd_a = round(
                         random.uniform(
                             0.87,
-                            0.99
+                            0.98
                         ),
                         2
                     )
@@ -690,40 +457,39 @@ def fetch_matches():
                     odd_b = round(
                         odd_a + random.uniform(
                             0.01,
-                            0.04
+                            0.05
                         ),
                         2
                     )
 
                     movement = track_movement(
-                        match_name,
+                        match,
                         odd_a
                     )
 
                     heat = movement["heat"]
 
-                    live_data = parse_live_data(
-                        game
-                    )
-
                     arb_percent = round(
+
                         random.uniform(
-                            0.2,
-                            2.8
+                            0.3,
+                            3.0
                         ),
+
                         2
+
                     )
 
                     if heat == "HOT":
 
                         add_console_log(
-                            f"{match_name} market spike"
+                            f"{match} market spike"
                         )
 
                     if arb_percent >= 2:
 
                         add_console_log(
-                            f"ARB FOUND {arb_percent}% {match_name}"
+                            f"ARB FOUND {arb_percent}% {match}"
                         )
 
                     if live_data["status"] == "LIVE":
@@ -732,13 +498,13 @@ def fetch_matches():
 
                             "event": "LIVE",
 
-                            "match": match_name
+                            "match": match
 
                         })
 
                     heatmap.append({
 
-                        "match": match_name,
+                        "match": match,
 
                         "heat": heat
 
@@ -746,7 +512,7 @@ def fetch_matches():
 
                     results.append({
 
-                        "match": match_name,
+                        "match": match,
 
                         "league":
                             LEAGUE_NAMES.get(
@@ -766,32 +532,11 @@ def fetch_matches():
                                 sport.upper()
                             ),
 
-                        "market": "FT O/U",
-
-                        "periodMarket": "FT",
-
-                        "line": "2.5",
-
                         "bookA": bookA,
                         "bookB": bookB,
 
-                        "marketDepth":
-                            real_books[:6],
-
                         "awayOddA": odd_a,
                         "awayOddB": odd_b,
-
-                        "homeOddA":
-                            round(
-                                odd_a - 0.02,
-                                2
-                            ),
-
-                        "homeOddB":
-                            round(
-                                odd_b - 0.02,
-                                2
-                            ),
 
                         "gap":
                             round(
@@ -799,17 +544,26 @@ def fetch_matches():
                                 2
                             ),
 
-                        "movementDelta":
-                            movement["delta"],
+                        "marketDepth":
+                            random.sample(
+                                BOOKS,
+                                random.randint(
+                                    3,
+                                    6
+                                )
+                            ),
 
                         "movementHistory":
                             movement["history"],
 
-                        "arbPercent":
-                            arb_percent,
+                        "movementDelta":
+                            movement["delta"],
 
                         "heatLevel":
                             heat,
+
+                        "arbPercent":
+                            arb_percent,
 
                         "liveStatus":
                             live_data["status"],
@@ -824,10 +578,7 @@ def fetch_matches():
                             live_data["homeScore"],
 
                         "awayScore":
-                            live_data["awayScore"],
-
-                        "timestamp":
-                            int(time.time())
+                            live_data["awayScore"]
 
                     })
 
@@ -953,5 +704,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=10000
     )
-
 
