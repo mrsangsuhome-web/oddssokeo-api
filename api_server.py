@@ -36,20 +36,33 @@ SPORTS = [
 
     "soccer_epl",
     "soccer_england_championship",
+
     "soccer_spain_la_liga",
+
     "soccer_germany_bundesliga",
+
     "soccer_italy_serie_a",
+
     "soccer_france_ligue_one",
+
     "soccer_usa_mls",
+
     "soccer_japan_j_league",
+
     "soccer_korea_kleague1",
+
     "soccer_china_superleague",
+
     "soccer_netherlands_eredivisie",
+
     "soccer_belgium_first_div",
+
     "soccer_uefa_champs_league",
 
     "soccer_australia_npl_queensland",
+
     "soccer_australia_npl_victoria",
+
     "soccer_australia_npl_tasmania",
 
     "soccer_ofc_pro_league"
@@ -88,6 +101,12 @@ LEAGUE_NAMES = {
         {
             "short": "EPL",
             "name": "England Premier League"
+        },
+
+    "soccer_england_championship":
+        {
+            "short": "EFL",
+            "name": "England Championship"
         },
 
     "soccer_spain_la_liga":
@@ -132,6 +151,12 @@ LEAGUE_NAMES = {
             "name": "Korea K League 1"
         },
 
+    "soccer_china_superleague":
+        {
+            "short": "CSL",
+            "name": "China Super League"
+        },
+
     "soccer_netherlands_eredivisie":
         {
             "short": "NED",
@@ -148,6 +173,30 @@ LEAGUE_NAMES = {
         {
             "short": "UCL",
             "name": "UEFA Champions League"
+        },
+
+    "soccer_australia_npl_queensland":
+        {
+            "short": "NPL QLD",
+            "name": "Australia NPL Queensland"
+        },
+
+    "soccer_australia_npl_victoria":
+        {
+            "short": "NPL VIC",
+            "name": "Australia NPL Victoria"
+        },
+
+    "soccer_australia_npl_tasmania":
+        {
+            "short": "NPL TAS",
+            "name": "Australia NPL Tasmania"
+        },
+
+    "soccer_ofc_pro_league":
+        {
+            "short": "OFC",
+            "name": "OFC Pro League"
         }
 
 }
@@ -192,24 +241,42 @@ def parse_live_data(game):
 
         if isinstance(scores, list):
 
-            if len(scores) >= 2:
+            for s in scores:
 
-                home_score = int(
-                    scores[0].get(
-                        "score",
-                        0
-                    )
+                score_name = str(
+                    s.get("name", "")
+                ).lower()
+
+                score_value = int(
+                    s.get("score", 0)
                 )
 
-                away_score = int(
-                    scores[1].get(
-                        "score",
-                        0
+                home_name = str(
+                    game.get(
+                        "home_team",
+                        ""
                     )
-                )
+                ).lower()
 
-    except:
-        pass
+                away_name = str(
+                    game.get(
+                        "away_team",
+                        ""
+                    )
+                ).lower()
+
+                if home_name in score_name:
+                    home_score = score_value
+
+                if away_name in score_name:
+                    away_score = score_value
+
+    except Exception as e:
+
+        print(
+            "SCORE PARSE ERROR",
+            e
+        )
 
     try:
 
@@ -248,19 +315,45 @@ def parse_live_data(game):
                 ).total_seconds() / 60
             )
 
+            # AUTO FINISH
+
+            if minutes_live >= 115:
+
+                return {
+
+                    "status": "FIN",
+
+                    "clock": "FT",
+
+                    "displayTime": None,
+
+                    "homeScore": home_score,
+
+                    "awayScore": away_score
+
+                }
+
+            # FIRST HALF
+
             if minutes_live <= 45:
 
                 display_clock = f"{minutes_live}'"
 
+            # HALF TIME
+
             elif minutes_live <= 60:
 
                 display_clock = "HT"
+
+            # SECOND HALF
 
             elif minutes_live <= 105:
 
                 second_half = minutes_live - 15
 
                 display_clock = f"{second_half}'"
+
+            # EXTRA
 
             else:
 
@@ -373,10 +466,18 @@ def fetch_matches():
 
                         "(bookings)",
                         "booking",
+
                         "(corners)",
                         "corner",
+
                         "(cards)",
-                        "card"
+                        "card",
+
+                        "(shots)",
+                        "shots",
+
+                        "(offsides)",
+                        "offside"
 
                     ]
 
@@ -394,8 +495,11 @@ def fetch_matches():
 
                     normalized_match = (
                         match_name
+                        .replace("FC ", "")
+                        .replace("CF ", "")
                         .replace("United", "Utd")
                         .replace("Wolverhampton", "Wolves")
+                        .replace("Hotspur", "")
                         .strip()
                         .lower()
                     )
