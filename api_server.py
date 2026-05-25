@@ -471,4 +471,89 @@ def parse_live_data(game):
             "awayScore": None
 
         }
+@app.route("/")
+def home():
+
+    return jsonify({
+
+        "status": "running",
+
+        "matches":
+            len(cached_matches)
+
+    })
+
+
+@app.route("/matches")
+def matches():
+
+    return jsonify(
+        cached_matches
+    )
+
+
+@app.route("/console")
+def console():
+
+    return jsonify(
+        console_logs
+    )
+
+
+@app.route("/heatmap")
+def heatmap():
+
+    return jsonify(
+        heatmap_cache
+    )
+
+
+@app.route("/live-events")
+def live_events():
+
+    return jsonify(
+        live_events_cache[:40]
+    )
+
+
+def background_loop():
+
+    while True:
+
+        try:
+
+            fetch_matches()
+
+        except Exception as e:
+
+            print(
+                "BACKGROUND LOOP ERROR",
+                e
+            )
+
+        time.sleep(6)
+
+
+if __name__ == "__main__":
+
+    try:
+
+        fetch_matches()
+
+        Thread(
+            target=background_loop,
+            daemon=True
+        ).start()
+
+        app.run(
+            host="0.0.0.0",
+            port=10000
+        )
+
+    except Exception as e:
+
+        print(
+            "SERVER START ERROR",
+            e
+        )
 
