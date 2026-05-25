@@ -36,78 +36,21 @@ SPORTS = [
 
     "soccer_epl",
     "soccer_england_championship",
-    "soccer_england_league1",
-    "soccer_england_league2",
-
     "soccer_spain_la_liga",
-    "soccer_spain_segunda_division",
-
     "soccer_germany_bundesliga",
-    "soccer_germany_bundesliga2",
-
     "soccer_italy_serie_a",
-    "soccer_italy_serie_b",
-
     "soccer_france_ligue_one",
-    "soccer_france_ligue_two",
-
-    "soccer_portugal_primeira_liga",
-
-    "soccer_netherlands_eredivisie",
-
-    "soccer_belgium_first_div",
-
-    "soccer_turkey_super_lig",
-
-    "soccer_scotland_premiership",
-
-    "soccer_switzerland_superleague",
-
-    "soccer_austria_bundesliga",
-
-    "soccer_poland_ekstraklasa",
-
-    "soccer_sweden_allsvenskan",
-    "soccer_sweden_superettan",
-
-    "soccer_norway_eliteserien",
-    "soccer_denmark_superliga",
-
-    "soccer_uefa_champs_league",
-    "soccer_uefa_europa_league",
-    "soccer_uefa_europa_conference_league",
-
     "soccer_usa_mls",
-
-    "soccer_mexico_ligamx",
-
-    "soccer_brazil_campeonato",
-
-    "soccer_argentina_primera_division",
-
-    "soccer_chile_campeonato",
-
     "soccer_japan_j_league",
-    "soccer_japan_j2_league",
-    "soccer_japan_j3_league",
-
-    "soccer_japan_nadeshiko_league_women",
-
     "soccer_korea_kleague1",
-    "soccer_korea_kleague2",
-
     "soccer_china_superleague",
-
-    "soccer_australia_aleague",
+    "soccer_netherlands_eredivisie",
+    "soccer_belgium_first_div",
+    "soccer_uefa_champs_league",
 
     "soccer_australia_npl_queensland",
-    "soccer_australia_npl_nsw",
     "soccer_australia_npl_victoria",
     "soccer_australia_npl_tasmania",
-
-    "soccer_australia_npl_nsw_u20",
-
-    "soccer_australia_queensland_premier_league",
 
     "soccer_ofc_pro_league"
 
@@ -122,9 +65,7 @@ BOOKMAKER_MAP = {
     "IBCBET": "IBC",
     "CMD368": "CMD",
     "SABA SPORTS": "SABA",
-    "BETINASIA": "BTI",
-    "ISN": "ISN",
-    "MAXBET": "MAX"
+    "BETINASIA": "BTI"
 
 }
 
@@ -147,12 +88,6 @@ LEAGUE_NAMES = {
         {
             "short": "EPL",
             "name": "England Premier League"
-        },
-
-    "soccer_england_championship":
-        {
-            "short": "EFL",
-            "name": "England Championship"
         },
 
     "soccer_spain_la_liga":
@@ -179,12 +114,6 @@ LEAGUE_NAMES = {
             "name": "France Ligue 1"
         },
 
-    "soccer_uefa_champs_league":
-        {
-            "short": "UCL",
-            "name": "UEFA Champions League"
-        },
-
     "soccer_usa_mls":
         {
             "short": "MLS",
@@ -197,28 +126,10 @@ LEAGUE_NAMES = {
             "name": "Japan J1 League"
         },
 
-    "soccer_japan_j2_league":
-        {
-            "short": "J2",
-            "name": "Japan J2 League"
-        },
-
-    "soccer_japan_j3_league":
-        {
-            "short": "J3",
-            "name": "Japan J3 League"
-        },
-
     "soccer_korea_kleague1":
         {
             "short": "K1",
             "name": "Korea K League 1"
-        },
-
-    "soccer_china_superleague":
-        {
-            "short": "CSL",
-            "name": "China Super League"
         },
 
     "soccer_netherlands_eredivisie":
@@ -233,28 +144,10 @@ LEAGUE_NAMES = {
             "name": "Belgium First Division"
         },
 
-    "soccer_australia_npl_queensland":
+    "soccer_uefa_champs_league":
         {
-            "short": "NPL QLD",
-            "name": "Australia NPL Queensland"
-        },
-
-    "soccer_australia_npl_victoria":
-        {
-            "short": "NPL VIC",
-            "name": "Australia NPL Victoria"
-        },
-
-    "soccer_australia_npl_tasmania":
-        {
-            "short": "NPL TAS",
-            "name": "Australia NPL Tasmania"
-        },
-
-    "soccer_ofc_pro_league":
-        {
-            "short": "OFC",
-            "name": "OFC Pro League"
+            "short": "UCL",
+            "name": "UEFA Champions League"
         }
 
 }
@@ -273,27 +166,6 @@ def normalize_bookmaker(name):
             return short
 
     return upper_name[:6]
-
-
-def safe_float(value, default=0.91):
-
-    try:
-        return round(float(value), 2)
-    except:
-        return default
-
-
-def get_heat(delta):
-
-    abs_delta = abs(delta)
-
-    if abs_delta >= 0.05:
-        return "HOT"
-
-    if abs_delta >= 0.03:
-        return "WARM"
-
-    return "NORMAL"
 
 
 def parse_live_data(game):
@@ -320,55 +192,24 @@ def parse_live_data(game):
 
         if isinstance(scores, list):
 
-            for s in scores:
+            if len(scores) >= 2:
 
-                score_name = str(
-                    s.get("name", "")
-                ).lower()
-
-                score_value = int(
-                    s.get("score", 0)
-                )
-
-                home_name = str(
-                    game.get(
-                        "home_team",
-                        ""
+                home_score = int(
+                    scores[0].get(
+                        "score",
+                        0
                     )
-                ).lower()
+                )
 
-                away_name = str(
-                    game.get(
-                        "away_team",
-                        ""
+                away_score = int(
+                    scores[1].get(
+                        "score",
+                        0
                     )
-                ).lower()
-
-                if home_name in score_name:
-                    home_score = score_value
-
-                if away_name in score_name:
-                    away_score = score_value
-
-        elif isinstance(scores, dict):
-
-            home_score = int(
-                scores.get(
-                    "home",
-                    0
                 )
-            )
 
-            away_score = int(
-                scores.get(
-                    "away",
-                    0
-                )
-            )
-
-    except Exception as e:
-
-        print("SCORE PARSE ERROR", e)
+    except:
+        pass
 
     try:
 
@@ -471,6 +312,248 @@ def parse_live_data(game):
             "awayScore": None
 
         }
+
+
+def fetch_matches():
+
+    global cached_matches
+
+    results = []
+
+    seen_matches = set()
+
+    try:
+
+        headers = {
+            "X-API-Key": API_KEY
+        }
+
+        for sport in SPORTS:
+
+            try:
+
+                url = (
+                    f"https://parlay-api.com/v1/"
+                    f"sports/{sport}/events"
+                )
+
+                response = requests.get(
+                    url,
+                    headers=headers,
+                    timeout=15
+                )
+
+                if response.status_code != 200:
+                    continue
+
+                data = response.json()
+
+                if not isinstance(data, list):
+                    continue
+
+                for game in data:
+
+                    home_team = game.get(
+                        "home_team",
+                        "HOME"
+                    )
+
+                    away_team = game.get(
+                        "away_team",
+                        "AWAY"
+                    )
+
+                    match_name = (
+                        f"{home_team} vs {away_team}"
+                    )
+
+                    lower_match = match_name.lower()
+
+                    banned_keywords = [
+
+                        "(bookings)",
+                        "booking",
+                        "(corners)",
+                        "corner",
+                        "(cards)",
+                        "card"
+
+                    ]
+
+                    should_skip = False
+
+                    for keyword in banned_keywords:
+
+                        if keyword in lower_match:
+
+                            should_skip = True
+                            break
+
+                    if should_skip:
+                        continue
+
+                    normalized_match = (
+                        match_name
+                        .replace("United", "Utd")
+                        .replace("Wolverhampton", "Wolves")
+                        .strip()
+                        .lower()
+                    )
+
+                    if normalized_match in seen_matches:
+                        continue
+
+                    seen_matches.add(
+                        normalized_match
+                    )
+
+                    bookmakers = game.get(
+                        "bookmakers",
+                        []
+                    )
+
+                    real_books = []
+
+                    for b in bookmakers:
+
+                        normalized = normalize_bookmaker(
+                            b.get("title")
+                        )
+
+                        if normalized:
+                            real_books.append(
+                                normalized
+                            )
+
+                    real_books = list(
+                        set(real_books)
+                    )
+
+                    if len(real_books) >= 2:
+
+                        bookA = real_books[0]
+                        bookB = real_books[1]
+
+                    else:
+
+                        bookA, bookB = random.sample(
+                            DEFAULT_BOOKS,
+                            2
+                        )
+
+                    live_data = parse_live_data(
+                        game
+                    )
+
+                    results.append({
+
+                        "match": match_name,
+
+                        "league":
+                            LEAGUE_NAMES.get(
+                                sport,
+                                {}
+                            ).get(
+                                "short",
+                                sport.upper()
+                            ),
+
+                        "leagueName":
+                            LEAGUE_NAMES.get(
+                                sport,
+                                {}
+                            ).get(
+                                "name",
+                                sport.upper()
+                            ),
+
+                        "market": "FT O/U",
+
+                        "periodMarket": "FT",
+
+                        "line": "2.5",
+
+                        "bookA": bookA,
+                        "bookB": bookB,
+
+                        "awayOddA": 0.91,
+                        "awayOddB": 0.93,
+
+                        "homeOddA": 0.89,
+                        "homeOddB": 0.87,
+
+                        "gap": 0.02,
+
+                        "movementDelta": 0.02,
+
+                        "heatLevel": "NORMAL",
+
+                        "liveStatus":
+                            live_data["status"],
+
+                        "clock":
+                            live_data["clock"],
+
+                        "displayTime":
+                            live_data["displayTime"],
+
+                        "homeScore":
+                            live_data["homeScore"],
+
+                        "awayScore":
+                            live_data["awayScore"],
+
+                        "timestamp":
+                            int(time.time())
+
+                    })
+
+            except Exception as e:
+
+                print(
+                    "SPORT ERROR",
+                    sport,
+                    e
+                )
+
+        results = sorted(
+
+            results,
+
+            key=lambda x: (
+
+                x["liveStatus"] != "LIVE",
+
+                -x["timestamp"]
+
+            )
+
+        )
+
+        cached_matches = results[:150]
+
+        with open(
+            CACHE_FILE,
+            "w"
+        ) as f:
+
+            json.dump(
+                cached_matches,
+                f
+            )
+
+        print(
+            f"UPDATED {len(cached_matches)} MATCHES"
+        )
+
+    except Exception as e:
+
+        print(
+            "FETCH ERROR",
+            e
+        )
+
+
 @app.route("/")
 def home():
 
