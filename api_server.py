@@ -47,40 +47,28 @@ MATCHES = [
 
 def generate_movement():
 
-    return [
+    values = []
 
-        round(
-            random.uniform(0.84, 1.02),
-            2
-        ),
+    for _ in range(8):
 
-        round(
-            random.uniform(0.84, 1.02),
-            2
-        ),
+        values.append(
 
-        round(
-            random.uniform(0.84, 1.02),
-            2
-        ),
+            round(
+                random.uniform(0.84, 1.02),
+                2
+            )
 
-        round(
-            random.uniform(0.84, 1.02),
-            2
-        ),
-
-        round(
-            random.uniform(0.84, 1.02),
-            2
         )
 
-    ]
+    return values
 
 def generate_depth():
 
     depth = []
 
     for _ in range(6):
+
+        liquidity = random.randint(15, 100)
 
         depth.append({
 
@@ -96,7 +84,20 @@ def generate_depth():
                 ),
 
             "liquidity":
-                random.randint(10, 100)
+                liquidity,
+
+            "side":
+                random.choice([
+                    "BACK",
+                    "LAY"
+                ]),
+
+            "pressure":
+                random.choice([
+                    "LOW",
+                    "MEDIUM",
+                    "HIGH"
+                ])
 
         })
 
@@ -108,6 +109,8 @@ def ai_prediction():
 
     away = random.randint(0, 3)
 
+    confidence = random.randint(61, 96)
+
     return {
 
         "predictHome":
@@ -117,7 +120,7 @@ def ai_prediction():
             away,
 
         "confidence":
-            random.randint(61, 95),
+            confidence,
 
         "xGHome":
             round(
@@ -129,7 +132,17 @@ def ai_prediction():
             round(
                 random.uniform(0.5, 2.8),
                 2
-            )
+            ),
+
+        "pressureIndex":
+            random.randint(40, 99),
+
+        "tempo":
+            random.choice([
+                "LOW",
+                "NORMAL",
+                "HIGH"
+            ])
 
     }
 
@@ -155,6 +168,12 @@ def workflow_engine(arb, heat, velocity):
             "STEAM_MOVE"
         )
 
+    if arb >= 3:
+
+        triggers.append(
+            "VALUE_BET"
+        )
+
     if arb >= 3 and velocity >= 4:
 
         triggers.append(
@@ -178,18 +197,18 @@ def build_match(match_name, league_name, league_code):
         False
     ])
 
-    home_score = random.randint(0, 3) if live else None
-    away_score = random.randint(0, 3) if live else None
+    home_score = random.randint(0, 4) if live else None
+    away_score = random.randint(0, 4) if live else None
 
     arb = round(
-        random.uniform(0.5, 5.2),
+        random.uniform(0.5, 5.5),
         2
     )
 
-    heat_score = random.randint(45, 98)
+    heat_score = random.randint(40, 99)
 
     velocity = round(
-        random.uniform(0.4, 6.2),
+        random.uniform(0.4, 6.8),
         2
     )
 
@@ -215,6 +234,16 @@ def build_match(match_name, league_name, league_code):
         )
 
     ai = ai_prediction()
+
+    sharp_money = random.choice([
+        True,
+        False
+    ])
+
+    steam_move = random.choice([
+        True,
+        False
+    ])
 
     return {
 
@@ -276,7 +305,7 @@ def build_match(match_name, league_name, league_code):
 
         "movementDelta":
             round(
-                random.uniform(0.01, 0.12),
+                random.uniform(0.01, 0.14),
                 2
             ),
 
@@ -310,6 +339,12 @@ def build_match(match_name, league_name, league_code):
         "xGAway":
             ai["xGAway"],
 
+        "pressureIndex":
+            ai["pressureIndex"],
+
+        "tempo":
+            ai["tempo"],
+
         "momentum":
             random.choice([
                 "HOME_PRESSURE",
@@ -332,15 +367,19 @@ def build_match(match_name, league_name, league_code):
             velocity,
 
         "sharpMoney":
-            random.choice([
-                True,
-                False
-            ]),
+            sharp_money,
 
         "steamMove":
+            steam_move,
+
+        "signalStrength":
+            random.randint(40, 100),
+
+        "marketPressure":
             random.choice([
-                True,
-                False
+                "BUY_PRESSURE",
+                "SELL_PRESSURE",
+                "BALANCED"
             ]),
 
         "created":
@@ -389,11 +428,11 @@ def matches():
 @app.route("/analytics")
 def analytics():
 
-    matches = []
+    markets = []
 
     for match in MATCHES:
 
-        matches.append(
+        markets.append(
 
             build_match(
                 match[0],
@@ -406,27 +445,34 @@ def analytics():
     return jsonify({
 
         "markets":
-            matches,
+            markets,
 
         "hotCount":
 
             len([
-                x for x in matches
+                x for x in markets
                 if x["heatLevel"] != "NORMAL"
             ]),
 
         "arbCount":
 
             len([
-                x for x in matches
+                x for x in markets
                 if x["arbPercent"] >= 2
             ]),
 
         "sharpCount":
 
             len([
-                x for x in matches
+                x for x in markets
                 if x["sharpMoney"]
+            ]),
+
+        "steamCount":
+
+            len([
+                x for x in markets
+                if x["steamMove"]
             ])
 
     })

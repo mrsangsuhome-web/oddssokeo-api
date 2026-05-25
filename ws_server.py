@@ -1,15 +1,14 @@
 
-from flask import Flask, jsonify
+from flask import Flask
+from flask_cors import CORS
 from flask_socketio import SocketIO
 
-import requests
-import time
 import random
-
-from threading import Thread
-from datetime import datetime
+import time
 
 app = Flask(__name__)
+
+CORS(app)
 
 socketio = SocketIO(
 
@@ -21,359 +20,286 @@ socketio = SocketIO(
 
 )
 
-API_URL = "https://oddssokeo-api-1.onrender.com/matches"
+BOOKMAKERS = [
+    "PIN",
+    "365",
+    "SBO",
+    "IBC",
+    "CMD",
+    "188",
+    "SABA",
+    "BTI"
+]
 
-last_snapshot = []
+MATCHES = [
 
-connected_clients = 0
+    "PSG vs Arsenal",
+    "Manchester City vs Aston Villa",
+    "Liverpool vs Brentford",
+    "Tottenham vs Everton",
+    "Napoli vs Udinese",
+    "AC Milan vs Cagliari",
+    "Torino vs Juventus",
+    "Villarreal vs Atletico Madrid",
+    "Saint-Étienne vs Nice",
+    "Paderborn vs Wolfsburg"
 
+]
+
+def build_market():
+
+    arb = round(
+        random.uniform(0.5, 5.4),
+        2
+    )
+
+    heat = random.choice([
+        "NORMAL",
+        "HOT",
+        "SHARP",
+        "STEAM"
+    ])
+
+    velocity = round(
+        random.uniform(0.4, 6.5),
+        2
+    )
+
+    sharp_money = random.choice([
+        True,
+        False
+    ])
+
+    steam_move = random.choice([
+        True,
+        False
+    ])
+
+    return {
+
+        "match":
+            random.choice(
+                MATCHES
+            ),
+
+        "arbPercent":
+            arb,
+
+        "heatLevel":
+            heat,
+
+        "bookA":
+            random.choice(
+                BOOKMAKERS
+            ),
+
+        "bookB":
+            random.choice(
+                BOOKMAKERS
+            ),
+
+        "marketVelocity":
+            velocity,
+
+        "sharpMoney":
+            sharp_money,
+
+        "steamMove":
+            steam_move,
+
+        "workflowTriggers": [
+
+            random.choice([
+                "LIVE_ARB",
+                "STEAM_MOVE",
+                "HOT_MOVEMENT",
+                "SHARP_ACTION"
+            ]),
+
+            random.choice([
+                "VALUE_BET",
+                "PRIORITY_ALERT",
+                "MOMENTUM_SPIKE"
+            ])
+
+        ],
+
+        "signalStrength":
+            random.randint(40, 100),
+
+        "created":
+            int(time.time())
+
+    }
 
 @app.route("/")
 def home():
 
-    return jsonify({
+    return {
 
-        "status": "websocket running",
+        "status":
+            "websocket running",
 
-        "clients": connected_clients,
+        "engine":
+            "premium sportsbook realtime feed"
 
-        "server_time":
-            datetime.now().strftime(
-                "%H:%M:%S"
-            )
-
-    })
-
-
-@app.route("/health")
-def health():
-
-    return jsonify({
-
-        "status": "healthy",
-
-        "websocket": True,
-
-        "clients": connected_clients
-
-    })
-
-
-def generate_updates():
-
-    global last_snapshot
-
-    while True:
-
-        try:
-
-            response = requests.get(
-
-                API_URL,
-
-                timeout=10
-
-            )
-
-            data = response.json()
-
-            updates = []
-
-            for match in data[:60]:
-
-                updates.append({
-
-                    "match":
-                        match.get("match"),
-
-                    "league":
-                        match.get("league"),
-
-                    "leagueName":
-                        match.get("leagueName"),
-
-                    "heat":
-                        match.get("heatLevel"),
-
-                    "arb":
-                        match.get("arbPercent"),
-
-                    "score":
-
-                        f"{match.get('homeScore')}:{match.get('awayScore')}"
-
-                        if match.get("homeScore") is not None
-
-                        else "-",
-
-                    "clock":
-                        match.get("clock"),
-
-                    "status":
-                        match.get("liveStatus"),
-
-                    "bookA":
-                        match.get("bookA"),
-
-                    "bookB":
-                        match.get("bookB"),
-
-                    "oddA":
-                        match.get("awayOddA"),
-
-                    "oddB":
-                        match.get("awayOddB"),
-
-                    "movement":
-                        match.get("movementDelta"),
-
-                    "marketDepth":
-                        match.get("marketDepth"),
-
-                    "heatLevel":
-                        match.get("heatLevel")
-
-                })
-
-            socketio.emit(
-
-                "market_update",
-
-                {
-
-                    "markets": updates,
-
-                    "updated":
-                        datetime.now().strftime(
-                            "%H:%M:%S"
-                        )
-
-                }
-
-            )
-
-            # LIVE TICKER
-
-            if len(updates) > 0:
-
-                hot_match = random.choice(
-                    updates
-                )
-
-                ticker_message = (
-
-                    f"{hot_match['match']} | "
-
-                    f"{hot_match['arb']}% arb | "
-
-                    f"{hot_match['heat']} movement"
-
-                )
-
-                socketio.emit(
-
-                    "live_ticker",
-
-                    {
-
-                        "message":
-                            ticker_message,
-
-                        "time":
-                            datetime.now().strftime(
-                                "%H:%M:%S"
-                            )
-
-                    }
-
-                )
-
-            # HOT ALERTS
-
-            hot_markets = [
-
-                x for x in updates
-
-                if x["heat"] == "HOT"
-
-            ]
-
-            if len(hot_markets) > 0:
-
-                socketio.emit(
-
-                    "hot_update",
-
-                    {
-
-                        "count":
-                            len(hot_markets),
-
-                        "markets":
-                            hot_markets[:5]
-
-                    }
-
-                )
-
-            # ARB ALERTS
-
-            arb_markets = [
-
-                x for x in updates
-
-                if x["arb"] >= 2
-
-            ]
-
-            if len(arb_markets) > 0:
-
-                socketio.emit(
-
-                    "arb_update",
-
-                    {
-
-                        "count":
-                            len(arb_markets),
-
-                        "markets":
-                            arb_markets[:10]
-
-                    }
-
-                )
-
-            # HEARTBEAT
-
-            socketio.emit(
-
-                "heartbeat",
-
-                {
-
-                    "server_time":
-                        datetime.now().strftime(
-                            "%H:%M:%S"
-                        ),
-
-                    "markets":
-                        len(updates)
-
-                }
-
-            )
-
-            last_snapshot = updates
-
-        except Exception as e:
-
-            socketio.emit(
-
-                "server_error",
-
-                {
-
-                    "error":
-                        str(e)
-
-                }
-
-            )
-
-        time.sleep(2)
-
+    }
 
 @socketio.on("connect")
 def handle_connect():
 
-    global connected_clients
-
-    connected_clients += 1
+    print("CLIENT CONNECTED")
 
     socketio.emit(
 
-        "connected",
+        "system",
 
         {
 
-            "status": "LIVE",
+            "message":
+                "CONNECTED TO PREMIUM TERMINAL",
 
-            "clients":
-                connected_clients
+            "time":
+                int(time.time())
 
         }
 
     )
 
-    print(
-
-        f"[WS] Client connected | "
-
-        f"total={connected_clients}"
-
-    )
-
-
 @socketio.on("disconnect")
 def handle_disconnect():
 
-    global connected_clients
+    print("CLIENT DISCONNECTED")
 
-    connected_clients -= 1
-
-    if connected_clients < 0:
-
-        connected_clients = 0
-
-    print(
-
-        f"[WS] Client disconnected | "
-
-        f"total={connected_clients}"
-
-    )
-
-
-def websocket_loop():
+def broadcast_loop():
 
     while True:
 
-        try:
+        market = build_market()
 
-            generate_updates()
+        socketio.emit(
 
-        except Exception as e:
+            "market_update",
 
-            print(
+            market
 
-                "[WS LOOP ERROR]",
+        )
 
-                str(e)
+        if market["arbPercent"] >= 3:
+
+            socketio.emit(
+
+                "live_alert",
+
+                {
+
+                    "type":
+                        "ARB",
+
+                    "message":
+                        f'{market["match"]} ARB {market["arbPercent"]}%',
+
+                    "priority":
+                        "HIGH"
+
+                }
 
             )
 
-        time.sleep(1)
+        if market["sharpMoney"]:
 
+            socketio.emit(
+
+                "live_alert",
+
+                {
+
+                    "type":
+                        "SHARP",
+
+                    "message":
+                        f'{market["match"]} sharp money detected',
+
+                    "priority":
+                        "MEDIUM"
+
+                }
+
+            )
+
+        if market["steamMove"]:
+
+            socketio.emit(
+
+                "live_alert",
+
+                {
+
+                    "type":
+                        "STEAM",
+
+                    "message":
+                        f'{market["match"]} steam move detected',
+
+                    "priority":
+                        "HIGH"
+
+                }
+
+            )
+
+        if market["marketVelocity"] >= 5:
+
+            socketio.emit(
+
+                "live_alert",
+
+                {
+
+                    "type":
+                        "VELOCITY",
+
+                    "message":
+                        f'{market["match"]} velocity spike',
+
+                    "priority":
+                        "HIGH"
+
+                }
+
+            )
+
+        socketio.emit(
+
+            "console",
+
+            {
+
+                "time":
+                    time.strftime("%H:%M:%S"),
+
+                "message":
+                    f'{market["match"]} {market["heatLevel"]} {market["arbPercent"]}%'
+
+            }
+
+        )
+
+        time.sleep(2)
 
 if __name__ == "__main__":
 
+    socketio.start_background_task(
+        broadcast_loop
+    )
+
     print("")
     print("===================================")
-    print(" PREMIUM ASIAN WS TERMINAL ")
+    print(" PREMIUM TERMINAL WS ")
     print("===================================")
     print(" WS PORT : 10001")
-    print(" MODE    : THREADING")
     print("===================================")
     print("")
-
-    Thread(
-
-        target=websocket_loop,
-
-        daemon=True
-
-    ).start()
 
     socketio.run(
 
@@ -382,6 +308,8 @@ if __name__ == "__main__":
         host="0.0.0.0",
 
         port=10001,
+
+        debug=True,
 
         allow_unsafe_werkzeug=True
 
