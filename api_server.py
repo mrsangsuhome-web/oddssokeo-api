@@ -139,8 +139,6 @@ def build_match(match_name, league_name, league_code):
         "arbPercent":
             arb,
 
-        # ===== PREMIUM TERMINAL =====
-
         "movementHistory": [
 
             round(random.uniform(0.86, 0.98), 2),
