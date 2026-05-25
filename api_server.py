@@ -554,3 +554,437 @@ def home():
 
     })
 
+def fetch_matches():
+
+    global cached_matches
+    global heatmap_cache
+    global live_events_cache
+
+    results = []
+
+    heatmap = []
+
+    live_events = []
+
+    seen_matches = set()
+
+    try:
+
+        headers = {
+            "X-API-Key": API_KEY
+        }
+
+        for sport in SPORTS:
+
+            try:
+
+                url = (
+                    f"https://parlay-api.com/v1/"
+                    f"sports/{sport}/events"
+                )
+
+                response = requests.get(
+                    url,
+                    headers=headers,
+                    timeout=15
+                )
+
+                if response.status_code != 200:
+                    continue
+
+                data = response.json()
+
+                if not isinstance(data, list):
+                    continue
+
+                for game in data:
+
+                    home_team = game.get(
+                        "home_team",
+                        "HOME"
+                    )
+
+                    away_team = game.get(
+                        "away_team",
+                        "AWAY"
+                    )
+
+                    match_name = (
+                        f"{home_team} vs {away_team}"
+                    )
+
+                    lower_match = match_name.lower()
+
+                    banned_keywords = [
+
+                        "(bookings)",
+                        "booking",
+
+                        "(corners)",
+                        "corner",
+
+                        "(cards)",
+                        "card",
+
+                        "(shots)",
+                        "shots",
+
+                        "(offsides)",
+                        "offside"
+
+                    ]
+
+                    should_skip = False
+
+                    for keyword in banned_keywords:
+
+                        if keyword in lower_match:
+
+                            should_skip = True
+                            break
+
+                    if should_skip:
+                        continue
+
+                    normalized_match = (
+                        match_name
+                        .replace("FC ", "")
+                        .replace("CF ", "")
+                        .replace("United", "Utd")
+                        .replace("Wolverhampton", "Wolves")
+                        .replace("Hotspur", "")
+                        .strip()
+                        .lower()
+                    )
+
+                    if normalized_match in seen_matches:
+                        continue
+
+                    seen_matches.add(
+                        normalized_match
+                    )
+
+                    bookmakers = game.get(
+                        "bookmakers",
+                        []
+                    )
+
+                    real_books = []
+
+                    for b in bookmakers:
+
+                        normalized = normalize_bookmaker(
+                            b.get("title")
+                        )
+
+                        if normalized:
+                            real_books.append(
+                                normalized
+                            )
+
+                    real_books = list(
+                        set(real_books)
+                    )
+
+                    if len(real_books) >= 2:
+
+                        bookA = real_books[0]
+                        bookB = real_books[1]
+
+                    else:
+
+                        bookA, bookB = random.sample(
+                            DEFAULT_BOOKS,
+                            2
+                        )
+
+                    odd_a = round(
+                        random.uniform(
+                            0.87,
+                            0.99
+                        ),
+                        2
+                    )
+
+                    odd_b = round(
+                        odd_a + random.uniform(
+                            0.01,
+                            0.04
+                        ),
+                        2
+                    )
+
+                    movement = track_movement(
+                        match_name,
+                        odd_a
+                    )
+
+                    heat = movement["heat"]
+
+                    live_data = parse_live_data(
+                        game
+                    )
+
+                    arb_percent = round(
+
+                        random.uniform(
+                            0.2,
+                            2.8
+                        ),
+
+                        2
+
+                    )
+
+                    if heat == "HOT":
+
+                        add_console_log(
+                            f"{match_name} market spike"
+                        )
+
+                    if arb_percent >= 2:
+
+                        add_console_log(
+                            f"ARB FOUND {arb_percent}% {match_name}"
+                        )
+
+                    if live_data["status"] == "LIVE":
+
+                        live_events.append({
+
+                            "event":
+                                "LIVE",
+
+                            "match":
+                                match_name
+
+                        })
+
+                    heatmap.append({
+
+                        "match": match_name,
+
+                        "heat": heat
+
+                    })
+
+                    results.append({
+
+                        "match": match_name,
+
+                        "league":
+                            LEAGUE_NAMES.get(
+                                sport,
+                                {}
+                            ).get(
+                                "short",
+                                sport.upper()
+                            ),
+
+                        "leagueName":
+                            LEAGUE_NAMES.get(
+                                sport,
+                                {}
+                            ).get(
+                                "name",
+                                sport.upper()
+                            ),
+
+                        "market": "FT O/U",
+
+                        "periodMarket": "FT",
+
+                        "line": "2.5",
+
+                        "bookA": bookA,
+                        "bookB": bookB,
+
+                        "marketDepth":
+                            real_books[:6],
+
+                        "awayOddA": odd_a,
+                        "awayOddB": odd_b,
+
+                        "homeOddA":
+                            round(
+                                odd_a - 0.02,
+                                2
+                            ),
+
+                        "homeOddB":
+                            round(
+                                odd_b - 0.02,
+                                2
+                            ),
+
+                        "gap":
+                            round(
+                                odd_b - odd_a,
+                                2
+                            ),
+
+                        "movementDelta":
+                            movement["delta"],
+
+                        "movementHistory":
+                            movement["history"],
+
+                        "arbPercent":
+                            arb_percent,
+
+                        "heatLevel":
+                            heat,
+
+                        "liveStatus":
+                            live_data["status"],
+
+                        "clock":
+                            live_data["clock"],
+
+                        "displayTime":
+                            live_data["displayTime"],
+
+                        "homeScore":
+                            live_data["homeScore"],
+
+                        "awayScore":
+                            live_data["awayScore"],
+
+                        "timestamp":
+                            int(time.time())
+
+                    })
+
+            except Exception as e:
+
+                add_console_log(
+                    f"SPORT ERROR {sport}"
+                )
+
+        results = sorted(
+
+            results,
+
+            key=lambda x: (
+
+                x["liveStatus"] != "LIVE",
+
+                -x["arbPercent"]
+
+            )
+
+        )
+
+        cached_matches = results[:300]
+
+        heatmap_cache = heatmap[:50]
+
+        live_events_cache = live_events[:50]
+
+        with open(
+            CACHE_FILE,
+            "w"
+        ) as f:
+
+            json.dump(
+                cached_matches,
+                f
+            )
+
+        add_console_log(
+            f"UPDATED {len(cached_matches)} MARKETS"
+        )
+
+    except Exception as e:
+
+        add_console_log(
+            f"FETCH ERROR {e}"
+        )
+
+
+@app.route("/")
+def home():
+
+    return jsonify({
+
+        "status": "running",
+
+        "matches":
+            len(cached_matches)
+
+    })
+
+
+@app.route("/matches")
+def matches():
+
+    return jsonify(
+        cached_matches
+    )
+
+
+@app.route("/console")
+def console():
+
+    return jsonify(
+        console_logs
+    )
+
+
+@app.route("/heatmap")
+def heatmap():
+
+    return jsonify(
+        heatmap_cache
+    )
+
+
+@app.route("/live-events")
+def live_events():
+
+    return jsonify(
+        live_events_cache
+    )
+
+
+def background_loop():
+
+    while True:
+
+        try:
+
+            fetch_matches()
+
+        except Exception as e:
+
+            add_console_log(
+                f"BACKGROUND ERROR {e}"
+            )
+
+        time.sleep(6)
+
+
+if __name__ == "__main__":
+
+    try:
+
+        fetch_matches()
+
+        Thread(
+            target=background_loop,
+            daemon=True
+        ).start()
+
+        app.run(
+            host="0.0.0.0",
+            port=10000
+        )
+
+    except Exception as e:
+
+        print(
+            "SERVER START ERROR",
+            e
+        )
+
+
