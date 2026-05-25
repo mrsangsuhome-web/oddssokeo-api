@@ -201,7 +201,6 @@ DEFAULT_BOOKS = [
     "BTI"
 
 ]
-
 LEAGUE_NAMES = {
 
     "soccer_epl":
@@ -542,18 +541,6 @@ def parse_live_data(game):
         }
 
 
-@app.route("/")
-def home():
-
-    return jsonify({
-
-        "status": "running",
-
-        "matches":
-            len(cached_matches)
-
-    })
-
 def fetch_matches():
 
     global cached_matches
@@ -634,16 +621,10 @@ def fetch_matches():
 
                     ]
 
-                    should_skip = False
-
-                    for keyword in banned_keywords:
-
-                        if keyword in lower_match:
-
-                            should_skip = True
-                            break
-
-                    if should_skip:
+                    if any(
+                        k in lower_match
+                        for k in banned_keywords
+                    ):
                         continue
 
                     normalized_match = (
@@ -726,14 +707,11 @@ def fetch_matches():
                     )
 
                     arb_percent = round(
-
                         random.uniform(
                             0.2,
                             2.8
                         ),
-
                         2
-
                     )
 
                     if heat == "HOT":
@@ -752,11 +730,9 @@ def fetch_matches():
 
                         live_events.append({
 
-                            "event":
-                                "LIVE",
+                            "event": "LIVE",
 
-                            "match":
-                                match_name
+                            "match": match_name
 
                         })
 
@@ -966,25 +942,16 @@ def background_loop():
 
 if __name__ == "__main__":
 
-    try:
+    fetch_matches()
 
-        fetch_matches()
+    Thread(
+        target=background_loop,
+        daemon=True
+    ).start()
 
-        Thread(
-            target=background_loop,
-            daemon=True
-        ).start()
-
-        app.run(
-            host="0.0.0.0",
-            port=10000
-        )
-
-    except Exception as e:
-
-        print(
-            "SERVER START ERROR",
-            e
-        )
+    app.run(
+        host="0.0.0.0",
+        port=10000
+    )
 
 
