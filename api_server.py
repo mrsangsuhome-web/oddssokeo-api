@@ -37,19 +37,159 @@ MATCHES = [
     ("LAFC vs Seattle Sounders", "MLS", "MLS"),
     ("Ajax vs Utrecht", "Netherlands Eredivisie", "ERD"),
     ("Club Brugge vs Anderlecht", "Belgium First Division", "BEL"),
-    ("Benfica vs Porto", "Portugal Liga", "POR")
+    ("Benfica vs Porto", "Portugal Liga", "POR"),
+    ("Flamengo vs Palmeiras", "Brazil Serie A", "BRA"),
+    ("Boca Juniors vs River Plate", "Argentina Primera", "ARG"),
+    ("Galatasaray vs Fenerbahce", "Turkey Super Lig", "TUR"),
+    ("Celtic vs Rangers", "Scotland Premiership", "SCO")
 
 ]
 
+def generate_movement():
+
+    return [
+
+        round(
+            random.uniform(0.84, 1.02),
+            2
+        ),
+
+        round(
+            random.uniform(0.84, 1.02),
+            2
+        ),
+
+        round(
+            random.uniform(0.84, 1.02),
+            2
+        ),
+
+        round(
+            random.uniform(0.84, 1.02),
+            2
+        ),
+
+        round(
+            random.uniform(0.84, 1.02),
+            2
+        )
+
+    ]
+
+def generate_depth():
+
+    depth = []
+
+    for _ in range(6):
+
+        depth.append({
+
+            "book":
+                random.choice(
+                    BOOKMAKERS
+                ),
+
+            "odd":
+                round(
+                    random.uniform(0.84, 1.02),
+                    2
+                ),
+
+            "liquidity":
+                random.randint(10, 100)
+
+        })
+
+    return depth
+
+def ai_prediction():
+
+    home = random.randint(0, 3)
+
+    away = random.randint(0, 3)
+
+    return {
+
+        "predictHome":
+            home,
+
+        "predictAway":
+            away,
+
+        "confidence":
+            random.randint(61, 95),
+
+        "xGHome":
+            round(
+                random.uniform(0.5, 2.8),
+                2
+            ),
+
+        "xGAway":
+            round(
+                random.uniform(0.5, 2.8),
+                2
+            )
+
+    }
+
+def workflow_engine(arb, heat, velocity):
+
+    triggers = []
+
+    if arb >= 2:
+
+        triggers.append(
+            "LIVE_ARB"
+        )
+
+    if heat >= 80:
+
+        triggers.append(
+            "HOT_MOVEMENT"
+        )
+
+    if velocity >= 4:
+
+        triggers.append(
+            "STEAM_MOVE"
+        )
+
+    if arb >= 3 and velocity >= 4:
+
+        triggers.append(
+            "PRIORITY_ALERT"
+        )
+
+    if random.choice([True, False]):
+
+        triggers.append(
+            "SHARP_ACTION"
+        )
+
+    return triggers
+
 def build_match(match_name, league_name, league_code):
 
-    live = random.choice([True, True, True, False])
+    live = random.choice([
+        True,
+        True,
+        True,
+        False
+    ])
 
     home_score = random.randint(0, 3) if live else None
     away_score = random.randint(0, 3) if live else None
 
     arb = round(
-        random.uniform(0.4, 4.8),
+        random.uniform(0.5, 5.2),
+        2
+    )
+
+    heat_score = random.randint(45, 98)
+
+    velocity = round(
+        random.uniform(0.4, 6.2),
         2
     )
 
@@ -60,14 +200,21 @@ def build_match(match_name, league_name, league_code):
         "STEAM"
     ])
 
-    book_a = random.choice(BOOKMAKERS)
-    book_b = random.choice(BOOKMAKERS)
+    book_a = random.choice(
+        BOOKMAKERS
+    )
+
+    book_b = random.choice(
+        BOOKMAKERS
+    )
 
     while book_a == book_b:
 
         book_b = random.choice(
             BOOKMAKERS
         )
+
+    ai = ai_prediction()
 
     return {
 
@@ -136,55 +283,32 @@ def build_match(match_name, league_name, league_code):
         "heatLevel":
             heat_level,
 
+        "heatScore":
+            heat_score,
+
         "arbPercent":
             arb,
 
-        "movementHistory": [
+        "movementHistory":
+            generate_movement(),
 
-            round(random.uniform(0.86, 0.98), 2),
-
-            round(random.uniform(0.86, 0.98), 2),
-
-            round(random.uniform(0.86, 0.98), 2),
-
-            round(random.uniform(0.86, 0.98), 2),
-
-            round(random.uniform(0.86, 0.98), 2)
-
-        ],
-
-        "marketDepth": [
-
-            random.choice(BOOKMAKERS),
-
-            random.choice(BOOKMAKERS),
-
-            random.choice(BOOKMAKERS),
-
-            random.choice(BOOKMAKERS)
-
-        ],
+        "marketDepth":
+            generate_depth(),
 
         "predictHome":
-            random.randint(0, 3),
+            ai["predictHome"],
 
         "predictAway":
-            random.randint(0, 3),
+            ai["predictAway"],
 
         "aiConfidence":
-            random.randint(61, 94),
+            ai["confidence"],
 
         "xGHome":
-            round(
-                random.uniform(0.4, 2.8),
-                2
-            ),
+            ai["xGHome"],
 
         "xGAway":
-            round(
-                random.uniform(0.4, 2.8),
-                2
-            ),
+            ai["xGAway"],
 
         "momentum":
             random.choice([
@@ -194,35 +318,18 @@ def build_match(match_name, league_name, league_code):
                 "HIGH_TEMPO"
             ]),
 
-        "workflowTriggers": [
-
-            random.choice([
-                "LIVE_ARB",
-                "HOT_MOVEMENT",
-                "STEAM_MOVE",
-                "SHARP_ACTION"
-            ]),
-
-            random.choice([
-                "LIVE_ARB",
-                "HOT_MOVEMENT",
-                "STEAM_MOVE",
-                "SHARP_ACTION"
-            ])
-
-        ],
-
-        "heatScore":
-            random.randint(45, 98),
+        "workflowTriggers":
+            workflow_engine(
+                arb,
+                heat_score,
+                velocity
+            ),
 
         "liquidityScore":
             random.randint(30, 100),
 
         "marketVelocity":
-            round(
-                random.uniform(0.5, 5.8),
-                2
-            ),
+            velocity,
 
         "sharpMoney":
             random.choice([
@@ -234,7 +341,10 @@ def build_match(match_name, league_name, league_code):
             random.choice([
                 True,
                 False
-            ])
+            ]),
+
+        "created":
+            int(time.time())
 
     }
 
@@ -243,7 +353,8 @@ def home():
 
     return jsonify({
 
-        "status": "LIVE",
+        "status":
+            "LIVE",
 
         "server":
             "Premium Asian Terminal API",
@@ -274,6 +385,51 @@ def matches():
         )
 
     return jsonify(data)
+
+@app.route("/analytics")
+def analytics():
+
+    matches = []
+
+    for match in MATCHES:
+
+        matches.append(
+
+            build_match(
+                match[0],
+                match[1],
+                match[2]
+            )
+
+        )
+
+    return jsonify({
+
+        "markets":
+            matches,
+
+        "hotCount":
+
+            len([
+                x for x in matches
+                if x["heatLevel"] != "NORMAL"
+            ]),
+
+        "arbCount":
+
+            len([
+                x for x in matches
+                if x["arbPercent"] >= 2
+            ]),
+
+        "sharpCount":
+
+            len([
+                x for x in matches
+                if x["sharpMoney"]
+            ])
+
+    })
 
 @app.route("/health")
 def health():
