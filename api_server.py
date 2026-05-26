@@ -78,33 +78,24 @@ def initial_market(match_name, league_name, league_code):
             odd_b,
 
         "movementHistory": [
-
-            odd_a for _ in range(30)
-
+            odd_a for _ in range(40)
         ],
 
         "velocityHistory": [
-
-            0 for _ in range(20)
-
+            0 for _ in range(25)
         ],
 
         "trendHistory": [],
+
+        "clusterHistory": [],
+
+        "replayTimeline": [],
 
         "marketVelocity":
             0,
 
         "arbPercent":
-            round(
-                abs(odd_a - odd_b) * 100,
-                2
-            ),
-
-        "heatLevel":
-            "NORMAL",
-
-        "heatScore":
-            45,
+            0,
 
         "steamMove":
             False,
@@ -112,73 +103,85 @@ def initial_market(match_name, league_name, league_code):
         "sharpMoney":
             False,
 
-        "signalStrength":
-            40,
-
         "syncLevel":
             0,
+
+        "heatLevel":
+            "NORMAL",
+
+        "heatScore":
+            40,
+
+        "signalStrength":
+            40,
 
         "momentum":
             "BALANCED",
 
         "workflowTriggers": [],
 
-        "replayTimeline": [],
+        "aiConfidence":
+            50,
+
+        "trendReversal":
+            False,
+
+        "cluster":
+            "NORMAL",
 
         "lastDirection":
-            "NONE",
-
-        "created":
-            int(time.time())
+            "NONE"
 
     }
 
 def weighted_move(history):
 
-    recent = history[-5:]
+    recent = history[-6:]
 
     avg = sum(recent) / len(recent)
 
-    if avg > recent[0]:
+    latest = recent[-1]
 
-        choices = [
-            0.01,
+    if latest > avg:
+
+        pool = [
             0.01,
             0.02,
+            0.01,
             0,
             -0.01
         ]
 
     else:
 
-        choices = [
-            -0.01,
+        pool = [
             -0.01,
             -0.02,
+            -0.01,
             0,
             0.01
         ]
 
-    return random.choice(choices)
+    return random.choice(pool)
 
-def calculate_velocity(delta_a, delta_b):
+def calc_velocity(a, b):
 
     return round(
 
-        abs(delta_a) * 100 +
+        abs(a) * 100 +
 
-        abs(delta_b) * 100,
+        abs(b) * 100,
 
         2
 
     )
 
-def detect_sync(delta_a, delta_b):
+def detect_sync(a, b):
 
-    if delta_a > 0 and delta_b > 0:
+    if a > 0 and b > 0:
         return 1
 
-    if delta_a < 0 and delta_b < 0:
+    if a < 0 and b < 0:
         return 1
 
     return 0
@@ -195,6 +198,38 @@ def detect_heat(velocity, arb):
         return "HOT"
 
     return "NORMAL"
+
+def detect_cluster(velocity, steam, sharp):
+
+    if steam and velocity >= 5:
+        return "STEAM_CLUSTER"
+
+    if sharp:
+        return "SHARP_CLUSTER"
+
+    if velocity >= 3:
+        return "HOT_CLUSTER"
+
+    return "NORMAL"
+
+def ai_confidence(velocity, arb, sync, trend):
+
+    score = 40
+
+    score += velocity * 5
+    score += arb * 4
+    score += sync * 15
+
+    if trend == "UP":
+        score += 8
+
+    if trend == "DOWN":
+        score += 8
+
+    return min(
+        99,
+        int(score)
+    )
 
 def build_market():
 
@@ -216,8 +251,8 @@ def build_market():
 
         market = MARKET_MEMORY[key]
 
-        previous_a = market["awayOddA"]
-        previous_b = market["awayOddB"]
+        prev_a = market["awayOddA"]
+        prev_b = market["awayOddB"]
 
         delta_a = weighted_move(
             market["movementHistory"]
@@ -228,28 +263,26 @@ def build_market():
         )
 
         next_a = round(
-            previous_a + delta_a,
+            prev_a + delta_a,
             2
         )
 
         next_b = round(
-            previous_b + delta_b,
+            prev_b + delta_b,
             2
         )
 
-        if next_a < 0.75:
-            next_a = 0.75
+        next_a = max(
+            0.75,
+            min(1.15, next_a)
+        )
 
-        if next_a > 1.15:
-            next_a = 1.15
+        next_b = max(
+            0.75,
+            min(1.15, next_b)
+        )
 
-        if next_b < 0.75:
-            next_b = 0.75
-
-        if next_b > 1.15:
-            next_b = 1.15
-
-        velocity = calculate_velocity(
+        velocity = calc_velocity(
             delta_a,
             delta_b
         )
@@ -264,11 +297,6 @@ def build_market():
             delta_b
         )
 
-        heat = detect_heat(
-            velocity,
-            arb
-        )
-
         steam = (
             velocity >= 5 and
             sync == 1
@@ -278,11 +306,22 @@ def build_market():
             arb >= 4
         )
 
+        heat = detect_heat(
+            velocity,
+            arb
+        )
+
+        cluster = detect_cluster(
+            velocity,
+            steam,
+            sharp
+        )
+
         movement = market["movementHistory"]
 
         movement.append(next_a)
 
-        if len(movement) > 30:
+        if len(movement) > 40:
 
             movement.pop(0)
 
@@ -292,23 +331,33 @@ def build_market():
             velocity
         )
 
-        if len(velocity_history) > 20:
+        if len(velocity_history) > 25:
 
             velocity_history.pop(0)
 
         trend = "BALANCED"
 
-        if next_a > previous_a:
+        if next_a > prev_a:
             trend = "UP"
 
-        if next_a < previous_a:
+        if next_a < prev_a:
             trend = "DOWN"
+
+        reversal = False
 
         trend_history = market["trendHistory"]
 
+        if len(trend_history) > 0:
+
+            last = trend_history[-1]
+
+            if last != trend and last != "BALANCED":
+
+                reversal = True
+
         trend_history.append(trend)
 
-        if len(trend_history) > 15:
+        if len(trend_history) > 20:
 
             trend_history.pop(0)
 
@@ -326,13 +375,24 @@ def build_market():
                 velocity,
 
             "arb":
-                arb
+                arb,
+
+            "trend":
+                trend
 
         })
 
-        if len(replay) > 25:
+        if len(replay) > 35:
 
             replay.pop(0)
+
+        cluster_history = market["clusterHistory"]
+
+        cluster_history.append(cluster)
+
+        if len(cluster_history) > 20:
+
+            cluster_history.pop(0)
 
         triggers = []
 
@@ -348,19 +408,14 @@ def build_market():
         if velocity >= 5:
             triggers.append("VELOCITY_SPIKE")
 
-        if arb >= 4 and steam:
-            triggers.append("PRIORITY_ALERT")
+        if reversal:
+            triggers.append("TREND_REVERSAL")
 
-        signal_strength = min(
-
-            100,
-
-            int(
-                velocity * 10 +
-                arb * 10 +
-                sync * 20
-            )
-
+        confidence = ai_confidence(
+            velocity,
+            arb,
+            sync,
+            trend
         )
 
         market["awayOddA"] = next_a
@@ -372,36 +427,44 @@ def build_market():
 
         market["trendHistory"] = trend_history
 
+        market["clusterHistory"] = cluster_history
+
         market["marketVelocity"] = velocity
 
         market["arbPercent"] = arb
 
         market["syncLevel"] = sync
 
-        market["heatLevel"] = heat
-
         market["steamMove"] = steam
 
         market["sharpMoney"] = sharp
 
-        market["workflowTriggers"] = triggers
+        market["heatLevel"] = heat
 
-        market["signalStrength"] = signal_strength
+        market["cluster"] = cluster
+
+        market["signalStrength"] = confidence
+
+        market["heatScore"] = min(
+            99,
+            int(
+                velocity * 10 +
+                arb * 8 +
+                sync * 12
+            )
+        )
+
+        market["workflowTriggers"] = triggers
 
         market["momentum"] = trend
 
         market["replayTimeline"] = replay
 
-        market["heatScore"] = min(
-            99,
-            int(
-                velocity * 12 +
-                arb * 8 +
-                sync * 15
-            )
-        )
-
         market["lastDirection"] = trend
+
+        market["trendReversal"] = reversal
+
+        market["aiConfidence"] = confidence
 
         market["clock"] = f"{random.randint(1,90)}'"
 
@@ -426,7 +489,7 @@ def home():
             "LIVE",
 
         "engine":
-            "TRUE MOVEMENT MEMORY ENGINE",
+            "TRUE MARKET INTELLIGENCE ENGINE",
 
         "markets":
             len(MATCHES),
@@ -467,18 +530,18 @@ def analytics():
                 if x["sharpMoney"]
             ]),
 
-        "arbCount":
+        "reversalCount":
 
             len([
                 x for x in markets
-                if x["arbPercent"] >= 3
+                if x["trendReversal"]
             ]),
 
-        "velocityCount":
+        "clusterCount":
 
             len([
                 x for x in markets
-                if x["marketVelocity"] >= 5
+                if x["cluster"] != "NORMAL"
             ])
 
     })
@@ -492,7 +555,7 @@ def health():
             "healthy",
 
         "engine":
-            "movement replay active"
+            "market intelligence active"
 
     })
 
@@ -500,7 +563,7 @@ if __name__ == "__main__":
 
     print("")
     print("===================================")
-    print(" TRUE REPLAY ENGINE ")
+    print(" TRUE MARKET INTELLIGENCE ENGINE ")
     print("===================================")
     print(" API PORT : 10000")
     print("===================================")
