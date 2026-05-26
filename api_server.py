@@ -4,6 +4,7 @@ from flask_cors import CORS
 
 import random
 import time
+import copy
 
 app = Flask(__name__)
 
@@ -25,225 +26,29 @@ MATCHES = [
     ("PSG vs Arsenal", "UEFA Champions League", "UCL"),
     ("Manchester City vs Aston Villa", "England Premier League", "EPL"),
     ("Liverpool vs Brentford", "England Premier League", "EPL"),
-    ("Brighton vs Manchester United", "England Premier League", "EPL"),
     ("Tottenham vs Everton", "England Premier League", "EPL"),
     ("Napoli vs Udinese", "Italy Serie A", "SA"),
     ("AC Milan vs Cagliari", "Italy Serie A", "SA"),
     ("Torino vs Juventus", "Italy Serie A", "SA"),
     ("Villarreal vs Atletico Madrid", "Spain La Liga", "LAL"),
     ("Saint-Étienne vs Nice", "France Ligue 1", "L1"),
-    ("Paderborn vs Wolfsburg", "Germany Bundesliga", "BUN"),
-    ("Inter Miami vs Philadelphia", "MLS", "MLS"),
-    ("LAFC vs Seattle Sounders", "MLS", "MLS"),
-    ("Ajax vs Utrecht", "Netherlands Eredivisie", "ERD"),
-    ("Club Brugge vs Anderlecht", "Belgium First Division", "BEL"),
-    ("Benfica vs Porto", "Portugal Liga", "POR"),
-    ("Flamengo vs Palmeiras", "Brazil Serie A", "BRA"),
-    ("Boca Juniors vs River Plate", "Argentina Primera", "ARG"),
-    ("Galatasaray vs Fenerbahce", "Turkey Super Lig", "TUR"),
-    ("Celtic vs Rangers", "Scotland Premiership", "SCO")
+    ("Paderborn vs Wolfsburg", "Germany Bundesliga", "BUN")
 
 ]
 
-def generate_movement():
+MARKET_MEMORY = {}
 
-    values = []
+def initial_market(match_name, league_name, league_code):
 
-    for _ in range(8):
-
-        values.append(
-
-            round(
-                random.uniform(0.84, 1.02),
-                2
-            )
-
-        )
-
-    return values
-
-def generate_depth():
-
-    depth = []
-
-    for _ in range(6):
-
-        liquidity = random.randint(15, 100)
-
-        depth.append({
-
-            "book":
-                random.choice(
-                    BOOKMAKERS
-                ),
-
-            "odd":
-                round(
-                    random.uniform(0.84, 1.02),
-                    2
-                ),
-
-            "liquidity":
-                liquidity,
-
-            "side":
-                random.choice([
-                    "BACK",
-                    "LAY"
-                ]),
-
-            "pressure":
-                random.choice([
-                    "LOW",
-                    "MEDIUM",
-                    "HIGH"
-                ])
-
-        })
-
-    return depth
-
-def ai_prediction():
-
-    home = random.randint(0, 3)
-
-    away = random.randint(0, 3)
-
-    confidence = random.randint(61, 96)
-
-    return {
-
-        "predictHome":
-            home,
-
-        "predictAway":
-            away,
-
-        "confidence":
-            confidence,
-
-        "xGHome":
-            round(
-                random.uniform(0.5, 2.8),
-                2
-            ),
-
-        "xGAway":
-            round(
-                random.uniform(0.5, 2.8),
-                2
-            ),
-
-        "pressureIndex":
-            random.randint(40, 99),
-
-        "tempo":
-            random.choice([
-                "LOW",
-                "NORMAL",
-                "HIGH"
-            ])
-
-    }
-
-def workflow_engine(arb, heat, velocity):
-
-    triggers = []
-
-    if arb >= 2:
-
-        triggers.append(
-            "LIVE_ARB"
-        )
-
-    if heat >= 80:
-
-        triggers.append(
-            "HOT_MOVEMENT"
-        )
-
-    if velocity >= 4:
-
-        triggers.append(
-            "STEAM_MOVE"
-        )
-
-    if arb >= 3:
-
-        triggers.append(
-            "VALUE_BET"
-        )
-
-    if arb >= 3 and velocity >= 4:
-
-        triggers.append(
-            "PRIORITY_ALERT"
-        )
-
-    if random.choice([True, False]):
-
-        triggers.append(
-            "SHARP_ACTION"
-        )
-
-    return triggers
-
-def build_match(match_name, league_name, league_code):
-
-    live = random.choice([
-        True,
-        True,
-        True,
-        False
-    ])
-
-    home_score = random.randint(0, 4) if live else None
-    away_score = random.randint(0, 4) if live else None
-
-    arb = round(
-        random.uniform(0.5, 5.5),
+    odd_a = round(
+        random.uniform(0.84, 1.02),
         2
     )
 
-    heat_score = random.randint(40, 99)
-
-    velocity = round(
-        random.uniform(0.4, 6.8),
+    odd_b = round(
+        random.uniform(0.84, 1.02),
         2
     )
-
-    heat_level = random.choice([
-        "NORMAL",
-        "HOT",
-        "SHARP",
-        "STEAM"
-    ])
-
-    book_a = random.choice(
-        BOOKMAKERS
-    )
-
-    book_b = random.choice(
-        BOOKMAKERS
-    )
-
-    while book_a == book_b:
-
-        book_b = random.choice(
-            BOOKMAKERS
-        )
-
-    ai = ai_prediction()
-
-    sharp_money = random.choice([
-        True,
-        False
-    ])
-
-    steam_move = random.choice([
-        True,
-        False
-    ])
 
     return {
 
@@ -256,136 +61,361 @@ def build_match(match_name, league_name, league_code):
         "leagueName":
             league_name,
 
-        "liveStatus":
-            "LIVE" if live else "PRE",
-
-        "clock":
-
-            f"{random.randint(1,90)}'"
-
-            if live
-
-            else
-
-            f"24/05 • {random.randint(16,23)}:{random.choice(['00','15','30','45'])}",
-
-        "displayTime":
-
-            f"{random.randint(1,90)}'"
-
-            if live
-
-            else
-
-            "PRE",
-
-        "homeScore":
-            home_score,
-
-        "awayScore":
-            away_score,
-
         "bookA":
-            book_a,
+            random.choice(
+                BOOKMAKERS
+            ),
 
         "bookB":
-            book_b,
+            random.choice(
+                BOOKMAKERS
+            ),
 
         "awayOddA":
-            round(
-                random.uniform(0.84, 1.02),
-                2
-            ),
+            odd_a,
 
         "awayOddB":
-            round(
-                random.uniform(0.84, 1.02),
-                2
-            ),
+            odd_b,
 
-        "movementDelta":
+        "movementHistory": [
+
+            odd_a for _ in range(30)
+
+        ],
+
+        "velocityHistory": [
+
+            0 for _ in range(20)
+
+        ],
+
+        "trendHistory": [],
+
+        "marketVelocity":
+            0,
+
+        "arbPercent":
             round(
-                random.uniform(0.01, 0.14),
+                abs(odd_a - odd_b) * 100,
                 2
             ),
 
         "heatLevel":
-            heat_level,
+            "NORMAL",
 
         "heatScore":
-            heat_score,
-
-        "arbPercent":
-            arb,
-
-        "movementHistory":
-            generate_movement(),
-
-        "marketDepth":
-            generate_depth(),
-
-        "predictHome":
-            ai["predictHome"],
-
-        "predictAway":
-            ai["predictAway"],
-
-        "aiConfidence":
-            ai["confidence"],
-
-        "xGHome":
-            ai["xGHome"],
-
-        "xGAway":
-            ai["xGAway"],
-
-        "pressureIndex":
-            ai["pressureIndex"],
-
-        "tempo":
-            ai["tempo"],
-
-        "momentum":
-            random.choice([
-                "HOME_PRESSURE",
-                "AWAY_PRESSURE",
-                "BALANCED",
-                "HIGH_TEMPO"
-            ]),
-
-        "workflowTriggers":
-            workflow_engine(
-                arb,
-                heat_score,
-                velocity
-            ),
-
-        "liquidityScore":
-            random.randint(30, 100),
-
-        "marketVelocity":
-            velocity,
-
-        "sharpMoney":
-            sharp_money,
+            45,
 
         "steamMove":
-            steam_move,
+            False,
+
+        "sharpMoney":
+            False,
 
         "signalStrength":
-            random.randint(40, 100),
+            40,
 
-        "marketPressure":
-            random.choice([
-                "BUY_PRESSURE",
-                "SELL_PRESSURE",
-                "BALANCED"
-            ]),
+        "syncLevel":
+            0,
+
+        "momentum":
+            "BALANCED",
+
+        "workflowTriggers": [],
+
+        "replayTimeline": [],
+
+        "lastDirection":
+            "NONE",
 
         "created":
             int(time.time())
 
     }
+
+def weighted_move(history):
+
+    recent = history[-5:]
+
+    avg = sum(recent) / len(recent)
+
+    if avg > recent[0]:
+
+        choices = [
+            0.01,
+            0.01,
+            0.02,
+            0,
+            -0.01
+        ]
+
+    else:
+
+        choices = [
+            -0.01,
+            -0.01,
+            -0.02,
+            0,
+            0.01
+        ]
+
+    return random.choice(choices)
+
+def calculate_velocity(delta_a, delta_b):
+
+    return round(
+
+        abs(delta_a) * 100 +
+
+        abs(delta_b) * 100,
+
+        2
+
+    )
+
+def detect_sync(delta_a, delta_b):
+
+    if delta_a > 0 and delta_b > 0:
+        return 1
+
+    if delta_a < 0 and delta_b < 0:
+        return 1
+
+    return 0
+
+def detect_heat(velocity, arb):
+
+    if velocity >= 5:
+        return "STEAM"
+
+    if arb >= 4:
+        return "SHARP"
+
+    if velocity >= 3:
+        return "HOT"
+
+    return "NORMAL"
+
+def build_market():
+
+    global MARKET_MEMORY
+
+    output = []
+
+    for match in MATCHES:
+
+        key = match[0]
+
+        if key not in MARKET_MEMORY:
+
+            MARKET_MEMORY[key] = initial_market(
+                match[0],
+                match[1],
+                match[2]
+            )
+
+        market = MARKET_MEMORY[key]
+
+        previous_a = market["awayOddA"]
+        previous_b = market["awayOddB"]
+
+        delta_a = weighted_move(
+            market["movementHistory"]
+        )
+
+        delta_b = weighted_move(
+            market["movementHistory"]
+        )
+
+        next_a = round(
+            previous_a + delta_a,
+            2
+        )
+
+        next_b = round(
+            previous_b + delta_b,
+            2
+        )
+
+        if next_a < 0.75:
+            next_a = 0.75
+
+        if next_a > 1.15:
+            next_a = 1.15
+
+        if next_b < 0.75:
+            next_b = 0.75
+
+        if next_b > 1.15:
+            next_b = 1.15
+
+        velocity = calculate_velocity(
+            delta_a,
+            delta_b
+        )
+
+        arb = round(
+            abs(next_a - next_b) * 100,
+            2
+        )
+
+        sync = detect_sync(
+            delta_a,
+            delta_b
+        )
+
+        heat = detect_heat(
+            velocity,
+            arb
+        )
+
+        steam = (
+            velocity >= 5 and
+            sync == 1
+        )
+
+        sharp = (
+            arb >= 4
+        )
+
+        movement = market["movementHistory"]
+
+        movement.append(next_a)
+
+        if len(movement) > 30:
+
+            movement.pop(0)
+
+        velocity_history = market["velocityHistory"]
+
+        velocity_history.append(
+            velocity
+        )
+
+        if len(velocity_history) > 20:
+
+            velocity_history.pop(0)
+
+        trend = "BALANCED"
+
+        if next_a > previous_a:
+            trend = "UP"
+
+        if next_a < previous_a:
+            trend = "DOWN"
+
+        trend_history = market["trendHistory"]
+
+        trend_history.append(trend)
+
+        if len(trend_history) > 15:
+
+            trend_history.pop(0)
+
+        replay = market["replayTimeline"]
+
+        replay.append({
+
+            "time":
+                int(time.time()),
+
+            "odd":
+                next_a,
+
+            "velocity":
+                velocity,
+
+            "arb":
+                arb
+
+        })
+
+        if len(replay) > 25:
+
+            replay.pop(0)
+
+        triggers = []
+
+        if arb >= 3:
+            triggers.append("LIVE_ARB")
+
+        if steam:
+            triggers.append("STEAM_MOVE")
+
+        if sharp:
+            triggers.append("SHARP_ACTION")
+
+        if velocity >= 5:
+            triggers.append("VELOCITY_SPIKE")
+
+        if arb >= 4 and steam:
+            triggers.append("PRIORITY_ALERT")
+
+        signal_strength = min(
+
+            100,
+
+            int(
+                velocity * 10 +
+                arb * 10 +
+                sync * 20
+            )
+
+        )
+
+        market["awayOddA"] = next_a
+        market["awayOddB"] = next_b
+
+        market["movementHistory"] = movement
+
+        market["velocityHistory"] = velocity_history
+
+        market["trendHistory"] = trend_history
+
+        market["marketVelocity"] = velocity
+
+        market["arbPercent"] = arb
+
+        market["syncLevel"] = sync
+
+        market["heatLevel"] = heat
+
+        market["steamMove"] = steam
+
+        market["sharpMoney"] = sharp
+
+        market["workflowTriggers"] = triggers
+
+        market["signalStrength"] = signal_strength
+
+        market["momentum"] = trend
+
+        market["replayTimeline"] = replay
+
+        market["heatScore"] = min(
+            99,
+            int(
+                velocity * 12 +
+                arb * 8 +
+                sync * 15
+            )
+        )
+
+        market["lastDirection"] = trend
+
+        market["clock"] = f"{random.randint(1,90)}'"
+
+        market["liveStatus"] = "LIVE"
+
+        market["homeScore"] = random.randint(0, 3)
+
+        market["awayScore"] = random.randint(0, 3)
+
+        output.append(
+            copy.deepcopy(market)
+        )
+
+    return output
 
 @app.route("/")
 def home():
@@ -395,8 +425,8 @@ def home():
         "status":
             "LIVE",
 
-        "server":
-            "Premium Asian Terminal API",
+        "engine":
+            "TRUE MOVEMENT MEMORY ENGINE",
 
         "markets":
             len(MATCHES),
@@ -409,56 +439,25 @@ def home():
 @app.route("/matches")
 def matches():
 
-    data = []
-
-    for match in MATCHES:
-
-        data.append(
-
-            build_match(
-                match[0],
-                match[1],
-                match[2]
-            )
-
-        )
-
-    return jsonify(data)
+    return jsonify(
+        build_market()
+    )
 
 @app.route("/analytics")
 def analytics():
 
-    markets = []
-
-    for match in MATCHES:
-
-        markets.append(
-
-            build_match(
-                match[0],
-                match[1],
-                match[2]
-            )
-
-        )
+    markets = build_market()
 
     return jsonify({
 
         "markets":
             markets,
 
-        "hotCount":
+        "steamCount":
 
             len([
                 x for x in markets
-                if x["heatLevel"] != "NORMAL"
-            ]),
-
-        "arbCount":
-
-            len([
-                x for x in markets
-                if x["arbPercent"] >= 2
+                if x["steamMove"]
             ]),
 
         "sharpCount":
@@ -468,11 +467,18 @@ def analytics():
                 if x["sharpMoney"]
             ]),
 
-        "steamCount":
+        "arbCount":
 
             len([
                 x for x in markets
-                if x["steamMove"]
+                if x["arbPercent"] >= 3
+            ]),
+
+        "velocityCount":
+
+            len([
+                x for x in markets
+                if x["marketVelocity"] >= 5
             ])
 
     })
@@ -485,8 +491,8 @@ def health():
         "status":
             "healthy",
 
-        "api":
-            "running"
+        "engine":
+            "movement replay active"
 
     })
 
@@ -494,7 +500,7 @@ if __name__ == "__main__":
 
     print("")
     print("===================================")
-    print(" PREMIUM ASIAN TERMINAL API ")
+    print(" TRUE REPLAY ENGINE ")
     print("===================================")
     print(" API PORT : 10000")
     print("===================================")

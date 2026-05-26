@@ -5,6 +5,7 @@ from flask_socketio import SocketIO
 
 import random
 import time
+import threading
 
 app = Flask(__name__)
 
@@ -16,7 +17,11 @@ socketio = SocketIO(
 
     cors_allowed_origins="*",
 
-    async_mode="threading"
+    async_mode="threading",
+
+    ping_timeout=20,
+
+    ping_interval=10
 
 )
 
@@ -46,47 +51,114 @@ MATCHES = [
 
 ]
 
-def build_market():
+MARKET_MEMORY = {}
 
-    arb = round(
-        random.uniform(0.5, 5.4),
+CLIENTS = 0
+
+def generate_market(match):
+
+    if match not in MARKET_MEMORY:
+
+        MARKET_MEMORY[match] = {
+
+            "oddA":
+                round(
+                    random.uniform(0.84, 1.02),
+                    2
+                ),
+
+            "oddB":
+                round(
+                    random.uniform(0.84, 1.02),
+                    2
+                )
+
+        }
+
+    market = MARKET_MEMORY[match]
+
+    move_a = random.choice([
+        -0.03,
+        -0.02,
+        -0.01,
+        0,
+        0.01,
+        0.02,
+        0.03
+    ])
+
+    move_b = random.choice([
+        -0.03,
+        -0.02,
+        -0.01,
+        0,
+        0.01,
+        0.02,
+        0.03
+    ])
+
+    market["oddA"] = round(
+        market["oddA"] + move_a,
         2
     )
 
-    heat = random.choice([
-        "NORMAL",
-        "HOT",
-        "SHARP",
-        "STEAM"
-    ])
+    market["oddB"] = round(
+        market["oddB"] + move_b,
+        2
+    )
+
+    if market["oddA"] < 0.75:
+        market["oddA"] = 0.75
+
+    if market["oddA"] > 1.15:
+        market["oddA"] = 1.15
+
+    if market["oddB"] < 0.75:
+        market["oddB"] = 0.75
+
+    if market["oddB"] > 1.15:
+        market["oddB"] = 1.15
 
     velocity = round(
-        random.uniform(0.4, 6.5),
+
+        abs(move_a) * 100 +
+
+        abs(move_b) * 100,
+
         2
+
     )
 
-    sharp_money = random.choice([
-        True,
-        False
-    ])
+    arb = round(
 
-    steam_move = random.choice([
-        True,
-        False
-    ])
+        abs(
+            market["oddA"] -
+            market["oddB"]
+        ) * 100,
+
+        2
+
+    )
+
+    steam = velocity >= 5
+
+    sharp = arb >= 4
+
+    heat = "NORMAL"
+
+    if steam:
+        heat = "STEAM"
+
+    elif sharp:
+        heat = "SHARP"
+
+    elif velocity >= 3:
+        heat = "HOT"
 
     return {
 
         "match":
-            random.choice(
-                MATCHES
-            ),
-
-        "arbPercent":
-            arb,
-
-        "heatLevel":
-            heat,
+            match,
 
         "bookA":
             random.choice(
@@ -98,34 +170,35 @@ def build_market():
                 BOOKMAKERS
             ),
 
+        "awayOddA":
+            market["oddA"],
+
+        "awayOddB":
+            market["oddB"],
+
+        "arbPercent":
+            arb,
+
         "marketVelocity":
             velocity,
 
-        "sharpMoney":
-            sharp_money,
+        "heatLevel":
+            heat,
 
         "steamMove":
-            steam_move,
+            steam,
 
-        "workflowTriggers": [
-
-            random.choice([
-                "LIVE_ARB",
-                "STEAM_MOVE",
-                "HOT_MOVEMENT",
-                "SHARP_ACTION"
-            ]),
-
-            random.choice([
-                "VALUE_BET",
-                "PRIORITY_ALERT",
-                "MOMENTUM_SPIKE"
-            ])
-
-        ],
+        "sharpMoney":
+            sharp,
 
         "signalStrength":
-            random.randint(40, 100),
+            min(
+                100,
+                int(
+                    velocity * 10 +
+                    arb * 10
+                )
+            ),
 
         "created":
             int(time.time())
@@ -138,17 +211,26 @@ def home():
     return {
 
         "status":
-            "websocket running",
+            "running",
 
         "engine":
-            "premium sportsbook realtime feed"
+            "true realtime push engine",
+
+        "clients":
+            CLIENTS
 
     }
 
 @socketio.on("connect")
-def handle_connect():
+def connect():
 
-    print("CLIENT CONNECTED")
+    global CLIENTS
+
+    CLIENTS += 1
+
+    print(
+        f"CLIENT CONNECTED ({CLIENTS})"
+    )
 
     socketio.emit(
 
@@ -156,8 +238,11 @@ def handle_connect():
 
         {
 
+            "type":
+                "SYSTEM",
+
             "message":
-                "CONNECTED TO PREMIUM TERMINAL",
+                "CONNECTED TO REALTIME TERMINAL",
 
             "time":
                 int(time.time())
@@ -167,121 +252,160 @@ def handle_connect():
     )
 
 @socketio.on("disconnect")
-def handle_disconnect():
+def disconnect():
 
-    print("CLIENT DISCONNECTED")
+    global CLIENTS
 
-def broadcast_loop():
+    CLIENTS -= 1
+
+    if CLIENTS < 0:
+        CLIENTS = 0
+
+    print(
+        f"CLIENT DISCONNECTED ({CLIENTS})"
+    )
+
+def heartbeat_loop():
 
     while True:
 
-        market = build_market()
-
         socketio.emit(
 
-            "market_update",
-
-            market
-
-        )
-
-        if market["arbPercent"] >= 3:
-
-            socketio.emit(
-
-                "live_alert",
-
-                {
-
-                    "type":
-                        "ARB",
-
-                    "message":
-                        f'{market["match"]} ARB {market["arbPercent"]}%',
-
-                    "priority":
-                        "HIGH"
-
-                }
-
-            )
-
-        if market["sharpMoney"]:
-
-            socketio.emit(
-
-                "live_alert",
-
-                {
-
-                    "type":
-                        "SHARP",
-
-                    "message":
-                        f'{market["match"]} sharp money detected',
-
-                    "priority":
-                        "MEDIUM"
-
-                }
-
-            )
-
-        if market["steamMove"]:
-
-            socketio.emit(
-
-                "live_alert",
-
-                {
-
-                    "type":
-                        "STEAM",
-
-                    "message":
-                        f'{market["match"]} steam move detected',
-
-                    "priority":
-                        "HIGH"
-
-                }
-
-            )
-
-        if market["marketVelocity"] >= 5:
-
-            socketio.emit(
-
-                "live_alert",
-
-                {
-
-                    "type":
-                        "VELOCITY",
-
-                    "message":
-                        f'{market["match"]} velocity spike',
-
-                    "priority":
-                        "HIGH"
-
-                }
-
-            )
-
-        socketio.emit(
-
-            "console",
+            "heartbeat",
 
             {
 
-                "time":
-                    time.strftime("%H:%M:%S"),
+                "status":
+                    "alive",
 
-                "message":
-                    f'{market["match"]} {market["heatLevel"]} {market["arbPercent"]}%'
+                "time":
+                    int(time.time())
 
             }
+
+        )
+
+        time.sleep(10)
+
+def market_stream_loop():
+
+    while True:
+
+        batch = []
+
+        for _ in range(4):
+
+            market = generate_market(
+                random.choice(MATCHES)
+            )
+
+            batch.append(market)
+
+            if market["arbPercent"] >= 3:
+
+                socketio.emit(
+
+                    "arb_alert",
+
+                    {
+
+                        "priority":
+                            "HIGH",
+
+                        "match":
+                            market["match"],
+
+                        "arbPercent":
+                            market["arbPercent"]
+
+                    }
+
+                )
+
+            if market["steamMove"]:
+
+                socketio.emit(
+
+                    "steam_alert",
+
+                    {
+
+                        "priority":
+                            "HIGH",
+
+                        "match":
+                            market["match"],
+
+                        "velocity":
+                            market["marketVelocity"]
+
+                    }
+
+                )
+
+            if market["sharpMoney"]:
+
+                socketio.emit(
+
+                    "sharp_alert",
+
+                    {
+
+                        "priority":
+                            "MEDIUM",
+
+                        "match":
+                            market["match"],
+
+                        "arb":
+                            market["arbPercent"]
+
+                    }
+
+                )
+
+            if market["marketVelocity"] >= 5:
+
+                socketio.emit(
+
+                    "velocity_alert",
+
+                    {
+
+                        "priority":
+                            "HIGH",
+
+                        "match":
+                            market["match"],
+
+                        "velocity":
+                            market["marketVelocity"]
+
+                    }
+
+                )
+
+            socketio.emit(
+
+                "console",
+
+                {
+
+                    "time":
+                        time.strftime("%H:%M:%S"),
+
+                    "message":
+                        f'{market["match"]} {market["heatLevel"]} {market["arbPercent"]}%'
+
+                }
+
+            )
+
+        socketio.emit(
+
+            "market_batch",
+
+            batch
 
         )
 
@@ -289,13 +413,25 @@ def broadcast_loop():
 
 if __name__ == "__main__":
 
-    socketio.start_background_task(
-        broadcast_loop
-    )
+    threading.Thread(
+
+        target=heartbeat_loop,
+
+        daemon=True
+
+    ).start()
+
+    threading.Thread(
+
+        target=market_stream_loop,
+
+        daemon=True
+
+    ).start()
 
     print("")
     print("===================================")
-    print(" PREMIUM TERMINAL WS ")
+    print(" TRUE REALTIME PUSH ENGINE ")
     print("===================================")
     print(" WS PORT : 10001")
     print("===================================")
