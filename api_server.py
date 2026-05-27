@@ -2,16 +2,16 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 
+import sqlite3
 import random
 import time
 import copy
-import sqlite3
 
 app = Flask(__name__)
 
 CORS(app)
 
-DB = "market_history.db"
+DB_NAME = "market_history.db"
 
 BOOKMAKERS = [
     "PIN",
@@ -26,30 +26,34 @@ BOOKMAKERS = [
 
 MATCHES = [
 
-    ("PSG vs Arsenal", "UEFA Champions League", "UCL"),
-    ("Manchester City vs Aston Villa", "England Premier League", "EPL"),
-    ("Liverpool vs Brentford", "England Premier League", "EPL"),
-    ("Tottenham vs Everton", "England Premier League", "EPL"),
-    ("Napoli vs Udinese", "Italy Serie A", "SA"),
-    ("AC Milan vs Cagliari", "Italy Serie A", "SA"),
-    ("Torino vs Juventus", "Italy Serie A", "SA"),
-    ("Villarreal vs Atletico Madrid", "Spain La Liga", "LAL"),
-    ("Saint-Étienne vs Nice", "France Ligue 1", "L1"),
-    ("Paderborn vs Wolfsburg", "Germany Bundesliga", "BUN")
+    ("PSG vs Arsenal", "UCL"),
+    ("Manchester City vs Aston Villa", "EPL"),
+    ("Liverpool vs Brentford", "EPL"),
+    ("Tottenham vs Everton", "EPL"),
+    ("Napoli vs Udinese", "SA"),
+    ("AC Milan vs Cagliari", "SA"),
+    ("Torino vs Juventus", "SA"),
+    ("Villarreal vs Atletico Madrid", "LAL"),
+    ("Saint-Étienne vs Nice", "L1"),
+    ("Paderborn vs Wolfsburg", "BUN")
 
 ]
 
 MARKET_MEMORY = {}
 
+# =========================
+# DATABASE
+# =========================
+
 def init_db():
 
-    conn = sqlite3.connect(DB)
+    conn = sqlite3.connect(DB_NAME)
 
     cur = conn.cursor()
 
     cur.execute("""
 
-        CREATE TABLE IF NOT EXISTS history (
+        CREATE TABLE IF NOT EXISTS market_history (
 
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -65,7 +69,7 @@ def init_db():
 
             arb REAL,
 
-            cluster TEXT,
+            cluster_name TEXT,
 
             confidence INTEGER,
 
@@ -83,15 +87,19 @@ def init_db():
 
     conn.close()
 
+# =========================
+# SAVE HISTORY
+# =========================
+
 def save_history(market):
 
-    conn = sqlite3.connect(DB)
+    conn = sqlite3.connect(DB_NAME)
 
     cur = conn.cursor()
 
     cur.execute("""
 
-        INSERT INTO history (
+        INSERT INTO market_history (
 
             match_name,
             league,
@@ -99,7 +107,7 @@ def save_history(market):
             odd_b,
             velocity,
             arb,
-            cluster,
+            cluster_name,
             confidence,
             trend,
             reversal,
@@ -113,14 +121,21 @@ def save_history(market):
 
         market["match"],
         market["league"],
+
         market["awayOddA"],
         market["awayOddB"],
+
         market["marketVelocity"],
         market["arbPercent"],
+
         market["cluster"],
+
         market["aiConfidence"],
+
         market["lastDirection"],
+
         int(market["trendReversal"]),
+
         int(time.time())
 
     ))
@@ -129,7 +144,14 @@ def save_history(market):
 
     conn.close()
 
-def initial_market(match_name, league_name, league_code):
+# =========================
+# INITIAL MARKET
+# =========================
+
+def create_initial_market(
+    match_name,
+    league
+):
 
     odd_a = round(
         random.uniform(0.84, 1.02),
@@ -147,10 +169,7 @@ def initial_market(match_name, league_name, league_code):
             match_name,
 
         "league":
-            league_code,
-
-        "leagueName":
-            league_name,
+            league,
 
         "bookA":
             random.choice(
@@ -174,23 +193,23 @@ def initial_market(match_name, league_name, league_code):
 
         "replayTimeline": [],
 
-        "cluster":
-            "NORMAL",
-
         "marketVelocity":
             0,
 
         "arbPercent":
             0,
 
-        "syncLevel":
-            0,
+        "cluster":
+            "NORMAL",
 
         "steamMove":
             False,
 
         "sharpMoney":
             False,
+
+        "syncLevel":
+            0,
 
         "heatScore":
             40,
@@ -209,6 +228,10 @@ def initial_market(match_name, league_name, league_code):
 
     }
 
+# =========================
+# MOVEMENT ENGINE
+# =========================
+
 def weighted_move(history):
 
     recent = history[-6:]
@@ -219,7 +242,7 @@ def weighted_move(history):
 
     if latest > avg:
 
-        pool = [
+        choices = [
             0.01,
             0.02,
             0,
@@ -228,14 +251,18 @@ def weighted_move(history):
 
     else:
 
-        pool = [
+        choices = [
             -0.01,
             -0.02,
             0,
             0.01
         ]
 
-    return random.choice(pool)
+    return random.choice(choices)
+
+# =========================
+# BUILD MARKET
+# =========================
 
 def build_market():
 
@@ -245,17 +272,19 @@ def build_market():
 
     for match in MATCHES:
 
-        key = match[0]
+        match_name = match[0]
+        league = match[1]
 
-        if key not in MARKET_MEMORY:
+        if match_name not in MARKET_MEMORY:
 
-            MARKET_MEMORY[key] = initial_market(
-                match[0],
-                match[1],
-                match[2]
+            MARKET_MEMORY[match_name] = create_initial_market(
+
+                match_name,
+                league
+
             )
 
-        market = MARKET_MEMORY[key]
+        market = MARKET_MEMORY[match_name]
 
         prev_a = market["awayOddA"]
         prev_b = market["awayOddB"]
@@ -347,6 +376,18 @@ def build_market():
 
                 reversal = True
 
+        confidence = min(
+
+            99,
+
+            int(
+                velocity * 8 +
+                arb * 8 +
+                sync * 15
+            )
+
+        )
+
         replay = market["replayTimeline"]
 
         replay.append({
@@ -380,26 +421,17 @@ def build_market():
 
             movement.pop(0)
 
-        confidence = min(
-
-            99,
-
-            int(
-                velocity * 8 +
-                arb * 8 +
-                sync * 15
-            )
-
-        )
-
         market["awayOddA"] = next_a
         market["awayOddB"] = next_b
 
         market["marketVelocity"] = velocity
+
         market["arbPercent"] = arb
+
         market["syncLevel"] = sync
 
         market["steamMove"] = steam
+
         market["sharpMoney"] = sharp
 
         market["cluster"] = cluster
@@ -440,6 +472,10 @@ def build_market():
 
     return output
 
+# =========================
+# ROUTES
+# =========================
+
 @app.route("/")
 def home():
 
@@ -449,7 +485,13 @@ def home():
             "LIVE",
 
         "engine":
-            "PERSISTENT HISTORICAL STORAGE",
+            "SPORTSBOOK INTELLIGENCE ENGINE",
+
+        "database":
+            "SQLITE ACTIVE",
+
+        "markets":
+            len(MATCHES),
 
         "timestamp":
             int(time.time())
@@ -466,7 +508,7 @@ def matches():
 @app.route("/history")
 def history():
 
-    conn = sqlite3.connect(DB)
+    conn = sqlite3.connect(DB_NAME)
 
     cur = conn.cursor()
 
@@ -480,13 +522,13 @@ def history():
             odd_b,
             velocity,
             arb,
-            cluster,
+            cluster_name,
             confidence,
             trend,
             reversal,
             created
 
-        FROM history
+        FROM market_history
 
         ORDER BY id DESC
 
@@ -498,11 +540,11 @@ def history():
 
     conn.close()
 
-    result = []
+    output = []
 
     for row in rows:
 
-        result.append({
+        output.append({
 
             "match":
                 row[0],
@@ -539,103 +581,7 @@ def history():
 
         })
 
-    return jsonify(result)
-
-@app.route("/ai-signals")
-def ai_signals():
-
-    conn = sqlite3.connect(DB)
-
-    cur = conn.cursor()
-
-    cur.execute("""
-
-        SELECT
-
-            match_name,
-            confidence,
-            cluster,
-            trend,
-            created
-
-        FROM history
-
-        WHERE confidence >= 70
-
-        ORDER BY id DESC
-
-        LIMIT 100
-
-    """)
-
-    rows = cur.fetchall()
-
-    conn.close()
-
-    result = []
-
-    for row in rows:
-
-        result.append({
-
-            "match":
-                row[0],
-
-            "confidence":
-                row[1],
-
-            "cluster":
-                row[2],
-
-            "trend":
-                row[3],
-
-            "created":
-                row[4]
-
-        })
-
-    return jsonify(result)
-
-@app.route("/clusters")
-def clusters():
-
-    conn = sqlite3.connect(DB)
-
-    cur = conn.cursor()
-
-    cur.execute("""
-
-        SELECT
-
-            cluster,
-            COUNT(*)
-
-        FROM history
-
-        GROUP BY cluster
-
-    """)
-
-    rows = cur.fetchall()
-
-    conn.close()
-
-    result = []
-
-    for row in rows:
-
-        result.append({
-
-            "cluster":
-                row[0],
-
-            "count":
-                row[1]
-
-        })
-
-    return jsonify(result)
+    return jsonify(output)
 
 @app.route("/health")
 def health():
@@ -649,9 +595,13 @@ def health():
             "connected",
 
         "engine":
-            "persistent replay active"
+            "replay intelligence active"
 
     })
+
+# =========================
+# START
+# =========================
 
 if __name__ == "__main__":
 
@@ -659,10 +609,10 @@ if __name__ == "__main__":
 
     print("")
     print("===================================")
-    print(" PERSISTENT HISTORICAL STORAGE ")
+    print(" SPORTSBOOK INTELLIGENCE ENGINE ")
     print("===================================")
-    print(" DATABASE : SQLITE")
     print(" API PORT : 10000")
+    print(" DATABASE : SQLITE")
     print("===================================")
     print("")
 
@@ -675,3 +625,4 @@ if __name__ == "__main__":
         debug=True
 
     )
+
