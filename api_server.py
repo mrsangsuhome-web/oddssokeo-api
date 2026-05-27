@@ -5,10 +5,13 @@ from flask_cors import CORS
 import random
 import time
 import copy
+import sqlite3
 
 app = Flask(__name__)
 
 CORS(app)
+
+DB = "market_history.db"
 
 BOOKMAKERS = [
     "PIN",
@@ -37,6 +40,94 @@ MATCHES = [
 ]
 
 MARKET_MEMORY = {}
+
+def init_db():
+
+    conn = sqlite3.connect(DB)
+
+    cur = conn.cursor()
+
+    cur.execute("""
+
+        CREATE TABLE IF NOT EXISTS history (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            match_name TEXT,
+
+            league TEXT,
+
+            odd_a REAL,
+
+            odd_b REAL,
+
+            velocity REAL,
+
+            arb REAL,
+
+            cluster TEXT,
+
+            confidence INTEGER,
+
+            trend TEXT,
+
+            reversal INTEGER,
+
+            created INTEGER
+
+        )
+
+    """)
+
+    conn.commit()
+
+    conn.close()
+
+def save_history(market):
+
+    conn = sqlite3.connect(DB)
+
+    cur = conn.cursor()
+
+    cur.execute("""
+
+        INSERT INTO history (
+
+            match_name,
+            league,
+            odd_a,
+            odd_b,
+            velocity,
+            arb,
+            cluster,
+            confidence,
+            trend,
+            reversal,
+            created
+
+        )
+
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+
+    """, (
+
+        market["match"],
+        market["league"],
+        market["awayOddA"],
+        market["awayOddB"],
+        market["marketVelocity"],
+        market["arbPercent"],
+        market["cluster"],
+        market["aiConfidence"],
+        market["lastDirection"],
+        int(market["trendReversal"]),
+        int(time.time())
+
+    ))
+
+    conn.commit()
+
+    conn.close()
 
 def initial_market(match_name, league_name, league_code):
 
@@ -81,20 +172,18 @@ def initial_market(match_name, league_name, league_code):
             odd_a for _ in range(40)
         ],
 
-        "velocityHistory": [
-            0 for _ in range(25)
-        ],
-
-        "trendHistory": [],
-
-        "clusterHistory": [],
-
         "replayTimeline": [],
+
+        "cluster":
+            "NORMAL",
 
         "marketVelocity":
             0,
 
         "arbPercent":
+            0,
+
+        "syncLevel":
             0,
 
         "steamMove":
@@ -103,34 +192,20 @@ def initial_market(match_name, league_name, league_code):
         "sharpMoney":
             False,
 
-        "syncLevel":
-            0,
-
-        "heatLevel":
-            "NORMAL",
-
         "heatScore":
             40,
 
         "signalStrength":
             40,
 
-        "momentum":
-            "BALANCED",
-
-        "workflowTriggers": [],
-
         "aiConfidence":
             50,
 
-        "trendReversal":
-            False,
-
-        "cluster":
-            "NORMAL",
-
         "lastDirection":
-            "NONE"
+            "BALANCED",
+
+        "trendReversal":
+            False
 
     }
 
@@ -147,7 +222,6 @@ def weighted_move(history):
         pool = [
             0.01,
             0.02,
-            0.01,
             0,
             -0.01
         ]
@@ -157,79 +231,11 @@ def weighted_move(history):
         pool = [
             -0.01,
             -0.02,
-            -0.01,
             0,
             0.01
         ]
 
     return random.choice(pool)
-
-def calc_velocity(a, b):
-
-    return round(
-
-        abs(a) * 100 +
-
-        abs(b) * 100,
-
-        2
-
-    )
-
-def detect_sync(a, b):
-
-    if a > 0 and b > 0:
-        return 1
-
-    if a < 0 and b < 0:
-        return 1
-
-    return 0
-
-def detect_heat(velocity, arb):
-
-    if velocity >= 5:
-        return "STEAM"
-
-    if arb >= 4:
-        return "SHARP"
-
-    if velocity >= 3:
-        return "HOT"
-
-    return "NORMAL"
-
-def detect_cluster(velocity, steam, sharp):
-
-    if steam and velocity >= 5:
-        return "STEAM_CLUSTER"
-
-    if sharp:
-        return "SHARP_CLUSTER"
-
-    if velocity >= 3:
-        return "HOT_CLUSTER"
-
-    return "NORMAL"
-
-def ai_confidence(velocity, arb, sync, trend):
-
-    score = 40
-
-    score += velocity * 5
-    score += arb * 4
-    score += sync * 15
-
-    if trend == "UP":
-        score += 8
-
-    if trend == "DOWN":
-        score += 8
-
-    return min(
-        99,
-        int(score)
-    )
 
 def build_market():
 
@@ -254,21 +260,21 @@ def build_market():
         prev_a = market["awayOddA"]
         prev_b = market["awayOddB"]
 
-        delta_a = weighted_move(
+        move_a = weighted_move(
             market["movementHistory"]
         )
 
-        delta_b = weighted_move(
+        move_b = weighted_move(
             market["movementHistory"]
         )
 
         next_a = round(
-            prev_a + delta_a,
+            prev_a + move_a,
             2
         )
 
         next_b = round(
-            prev_b + delta_b,
+            prev_b + move_b,
             2
         )
 
@@ -282,9 +288,14 @@ def build_market():
             min(1.15, next_b)
         )
 
-        velocity = calc_velocity(
-            delta_a,
-            delta_b
+        velocity = round(
+
+            abs(move_a) * 100 +
+
+            abs(move_b) * 100,
+
+            2
+
         )
 
         arb = round(
@@ -292,10 +303,13 @@ def build_market():
             2
         )
 
-        sync = detect_sync(
-            delta_a,
-            delta_b
-        )
+        sync = 0
+
+        if move_a > 0 and move_b > 0:
+            sync = 1
+
+        if move_a < 0 and move_b < 0:
+            sync = 1
 
         steam = (
             velocity >= 5 and
@@ -306,60 +320,32 @@ def build_market():
             arb >= 4
         )
 
-        heat = detect_heat(
-            velocity,
-            arb
-        )
+        cluster = "NORMAL"
 
-        cluster = detect_cluster(
-            velocity,
-            steam,
-            sharp
-        )
+        if steam:
+            cluster = "STEAM_CLUSTER"
 
-        movement = market["movementHistory"]
+        elif sharp:
+            cluster = "SHARP_CLUSTER"
 
-        movement.append(next_a)
-
-        if len(movement) > 40:
-
-            movement.pop(0)
-
-        velocity_history = market["velocityHistory"]
-
-        velocity_history.append(
-            velocity
-        )
-
-        if len(velocity_history) > 25:
-
-            velocity_history.pop(0)
+        elif velocity >= 3:
+            cluster = "HOT_CLUSTER"
 
         trend = "BALANCED"
 
-        if next_a > prev_a:
+        if move_a > 0:
             trend = "UP"
 
-        if next_a < prev_a:
+        if move_a < 0:
             trend = "DOWN"
 
         reversal = False
 
-        trend_history = market["trendHistory"]
+        if market["lastDirection"] != trend:
 
-        if len(trend_history) > 0:
-
-            last = trend_history[-1]
-
-            if last != trend and last != "BALANCED":
+            if market["lastDirection"] != "BALANCED":
 
                 reversal = True
-
-        trend_history.append(trend)
-
-        if len(trend_history) > 20:
-
-            trend_history.pop(0)
 
         replay = market["replayTimeline"]
 
@@ -382,81 +368,43 @@ def build_market():
 
         })
 
-        if len(replay) > 35:
+        if len(replay) > 50:
 
             replay.pop(0)
 
-        cluster_history = market["clusterHistory"]
+        movement = market["movementHistory"]
 
-        cluster_history.append(cluster)
+        movement.append(next_a)
 
-        if len(cluster_history) > 20:
+        if len(movement) > 40:
 
-            cluster_history.pop(0)
+            movement.pop(0)
 
-        triggers = []
+        confidence = min(
 
-        if arb >= 3:
-            triggers.append("LIVE_ARB")
+            99,
 
-        if steam:
-            triggers.append("STEAM_MOVE")
+            int(
+                velocity * 8 +
+                arb * 8 +
+                sync * 15
+            )
 
-        if sharp:
-            triggers.append("SHARP_ACTION")
-
-        if velocity >= 5:
-            triggers.append("VELOCITY_SPIKE")
-
-        if reversal:
-            triggers.append("TREND_REVERSAL")
-
-        confidence = ai_confidence(
-            velocity,
-            arb,
-            sync,
-            trend
         )
 
         market["awayOddA"] = next_a
         market["awayOddB"] = next_b
 
-        market["movementHistory"] = movement
-
-        market["velocityHistory"] = velocity_history
-
-        market["trendHistory"] = trend_history
-
-        market["clusterHistory"] = cluster_history
-
         market["marketVelocity"] = velocity
-
         market["arbPercent"] = arb
-
         market["syncLevel"] = sync
 
         market["steamMove"] = steam
-
         market["sharpMoney"] = sharp
-
-        market["heatLevel"] = heat
 
         market["cluster"] = cluster
 
-        market["signalStrength"] = confidence
-
-        market["heatScore"] = min(
-            99,
-            int(
-                velocity * 10 +
-                arb * 8 +
-                sync * 12
-            )
-        )
-
-        market["workflowTriggers"] = triggers
-
-        market["momentum"] = trend
+        market["movementHistory"] = movement
 
         market["replayTimeline"] = replay
 
@@ -466,6 +414,16 @@ def build_market():
 
         market["aiConfidence"] = confidence
 
+        market["signalStrength"] = confidence
+
+        market["heatScore"] = min(
+            99,
+            int(
+                velocity * 10 +
+                arb * 8
+            )
+        )
+
         market["clock"] = f"{random.randint(1,90)}'"
 
         market["liveStatus"] = "LIVE"
@@ -473,6 +431,8 @@ def build_market():
         market["homeScore"] = random.randint(0, 3)
 
         market["awayScore"] = random.randint(0, 3)
+
+        save_history(market)
 
         output.append(
             copy.deepcopy(market)
@@ -489,10 +449,7 @@ def home():
             "LIVE",
 
         "engine":
-            "TRUE MARKET INTELLIGENCE ENGINE",
-
-        "markets":
-            len(MATCHES),
+            "PERSISTENT HISTORICAL STORAGE",
 
         "timestamp":
             int(time.time())
@@ -506,45 +463,179 @@ def matches():
         build_market()
     )
 
-@app.route("/analytics")
-def analytics():
+@app.route("/history")
+def history():
 
-    markets = build_market()
+    conn = sqlite3.connect(DB)
 
-    return jsonify({
+    cur = conn.cursor()
 
-        "markets":
-            markets,
+    cur.execute("""
 
-        "steamCount":
+        SELECT
 
-            len([
-                x for x in markets
-                if x["steamMove"]
-            ]),
+            match_name,
+            league,
+            odd_a,
+            odd_b,
+            velocity,
+            arb,
+            cluster,
+            confidence,
+            trend,
+            reversal,
+            created
 
-        "sharpCount":
+        FROM history
 
-            len([
-                x for x in markets
-                if x["sharpMoney"]
-            ]),
+        ORDER BY id DESC
 
-        "reversalCount":
+        LIMIT 300
 
-            len([
-                x for x in markets
-                if x["trendReversal"]
-            ]),
+    """)
 
-        "clusterCount":
+    rows = cur.fetchall()
 
-            len([
-                x for x in markets
-                if x["cluster"] != "NORMAL"
-            ])
+    conn.close()
 
-    })
+    result = []
+
+    for row in rows:
+
+        result.append({
+
+            "match":
+                row[0],
+
+            "league":
+                row[1],
+
+            "oddA":
+                row[2],
+
+            "oddB":
+                row[3],
+
+            "velocity":
+                row[4],
+
+            "arb":
+                row[5],
+
+            "cluster":
+                row[6],
+
+            "confidence":
+                row[7],
+
+            "trend":
+                row[8],
+
+            "reversal":
+                bool(row[9]),
+
+            "created":
+                row[10]
+
+        })
+
+    return jsonify(result)
+
+@app.route("/ai-signals")
+def ai_signals():
+
+    conn = sqlite3.connect(DB)
+
+    cur = conn.cursor()
+
+    cur.execute("""
+
+        SELECT
+
+            match_name,
+            confidence,
+            cluster,
+            trend,
+            created
+
+        FROM history
+
+        WHERE confidence >= 70
+
+        ORDER BY id DESC
+
+        LIMIT 100
+
+    """)
+
+    rows = cur.fetchall()
+
+    conn.close()
+
+    result = []
+
+    for row in rows:
+
+        result.append({
+
+            "match":
+                row[0],
+
+            "confidence":
+                row[1],
+
+            "cluster":
+                row[2],
+
+            "trend":
+                row[3],
+
+            "created":
+                row[4]
+
+        })
+
+    return jsonify(result)
+
+@app.route("/clusters")
+def clusters():
+
+    conn = sqlite3.connect(DB)
+
+    cur = conn.cursor()
+
+    cur.execute("""
+
+        SELECT
+
+            cluster,
+            COUNT(*)
+
+        FROM history
+
+        GROUP BY cluster
+
+    """)
+
+    rows = cur.fetchall()
+
+    conn.close()
+
+    result = []
+
+    for row in rows:
+
+        result.append({
+
+            "cluster":
+                row[0],
+
+            "count":
+                row[1]
+
+        })
+
+    return jsonify(result)
 
 @app.route("/health")
 def health():
@@ -554,17 +645,23 @@ def health():
         "status":
             "healthy",
 
+        "database":
+            "connected",
+
         "engine":
-            "market intelligence active"
+            "persistent replay active"
 
     })
 
 if __name__ == "__main__":
 
+    init_db()
+
     print("")
     print("===================================")
-    print(" TRUE MARKET INTELLIGENCE ENGINE ")
+    print(" PERSISTENT HISTORICAL STORAGE ")
     print("===================================")
+    print(" DATABASE : SQLITE")
     print(" API PORT : 10000")
     print("===================================")
     print("")
@@ -578,4 +675,3 @@ if __name__ == "__main__":
         debug=True
 
     )
-
