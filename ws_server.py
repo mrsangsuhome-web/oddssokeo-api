@@ -55,7 +55,7 @@ MARKET_MEMORY = {}
 
 CLIENTS = 0
 
-def generate_market(match):
+def create_market(match):
 
     if match not in MARKET_MEMORY:
 
@@ -71,7 +71,10 @@ def generate_market(match):
                 round(
                     random.uniform(0.84, 1.02),
                     2
-                )
+                ),
+
+            "trend":
+                "BALANCED"
 
         }
 
@@ -107,17 +110,15 @@ def generate_market(match):
         2
     )
 
-    if market["oddA"] < 0.75:
-        market["oddA"] = 0.75
+    market["oddA"] = max(
+        0.75,
+        min(1.15, market["oddA"])
+    )
 
-    if market["oddA"] > 1.15:
-        market["oddA"] = 1.15
-
-    if market["oddB"] < 0.75:
-        market["oddB"] = 0.75
-
-    if market["oddB"] > 1.15:
-        market["oddB"] = 1.15
+    market["oddB"] = max(
+        0.75,
+        min(1.15, market["oddB"])
+    )
 
     velocity = round(
 
@@ -140,20 +141,63 @@ def generate_market(match):
 
     )
 
-    steam = velocity >= 5
+    sync = 0
 
-    sharp = arb >= 4
+    if move_a > 0 and move_b > 0:
+        sync = 1
 
-    heat = "NORMAL"
+    if move_a < 0 and move_b < 0:
+        sync = 1
+
+    steam = (
+        velocity >= 5 and
+        sync == 1
+    )
+
+    sharp = (
+        arb >= 4
+    )
+
+    cluster = "NORMAL"
 
     if steam:
-        heat = "STEAM"
+        cluster = "STEAM_CLUSTER"
 
     elif sharp:
-        heat = "SHARP"
+        cluster = "SHARP_CLUSTER"
 
     elif velocity >= 3:
-        heat = "HOT"
+        cluster = "HOT_CLUSTER"
+
+    trend = "BALANCED"
+
+    if move_a > 0:
+        trend = "UP"
+
+    if move_a < 0:
+        trend = "DOWN"
+
+    reversal = False
+
+    if market["trend"] != trend:
+
+        if market["trend"] != "BALANCED":
+
+            reversal = True
+
+    market["trend"] = trend
+
+    confidence = min(
+
+        99,
+
+        int(
+            velocity * 8 +
+            arb * 8 +
+            sync * 15
+        )
+
+    )
 
     return {
 
@@ -176,14 +220,14 @@ def generate_market(match):
         "awayOddB":
             market["oddB"],
 
-        "arbPercent":
-            arb,
-
         "marketVelocity":
             velocity,
 
-        "heatLevel":
-            heat,
+        "arbPercent":
+            arb,
+
+        "syncLevel":
+            sync,
 
         "steamMove":
             steam,
@@ -191,17 +235,20 @@ def generate_market(match):
         "sharpMoney":
             sharp,
 
-        "signalStrength":
-            min(
-                100,
-                int(
-                    velocity * 10 +
-                    arb * 10
-                )
-            ),
+        "cluster":
+            cluster,
 
-        "created":
-            int(time.time())
+        "trend":
+            trend,
+
+        "trendReversal":
+            reversal,
+
+        "aiConfidence":
+            confidence,
+
+        "time":
+            time.strftime("%H:%M:%S")
 
     }
 
@@ -211,10 +258,10 @@ def home():
     return {
 
         "status":
-            "running",
+            "LIVE",
 
         "engine":
-            "true realtime push engine",
+            "TRUE WEBSOCKET INTELLIGENCE STREAM",
 
         "clients":
             CLIENTS
@@ -238,14 +285,11 @@ def connect():
 
         {
 
-            "type":
-                "SYSTEM",
-
             "message":
-                "CONNECTED TO REALTIME TERMINAL",
+                "CONNECTED TO INTELLIGENCE STREAM",
 
             "time":
-                int(time.time())
+                time.strftime("%H:%M:%S")
 
         }
 
@@ -279,7 +323,7 @@ def heartbeat_loop():
                     "alive",
 
                 "time":
-                    int(time.time())
+                    time.strftime("%H:%M:%S")
 
             }
 
@@ -287,99 +331,105 @@ def heartbeat_loop():
 
         time.sleep(10)
 
-def market_stream_loop():
+def intelligence_stream_loop():
 
     while True:
 
         batch = []
 
-        for _ in range(4):
+        for _ in range(5):
 
-            market = generate_market(
+            market = create_market(
                 random.choice(MATCHES)
             )
 
             batch.append(market)
 
-            if market["arbPercent"] >= 3:
+            socketio.emit(
+
+                "intelligence_stream",
+
+                market
+
+            )
+
+            socketio.emit(
+
+                "replay_stream",
+
+                {
+
+                    "match":
+                        market["match"],
+
+                    "velocity":
+                        market["marketVelocity"],
+
+                    "trend":
+                        market["trend"],
+
+                    "confidence":
+                        market["aiConfidence"]
+
+                }
+
+            )
+
+            if market["cluster"] != "NORMAL":
 
                 socketio.emit(
 
-                    "arb_alert",
+                    "cluster_alert",
 
                     {
-
-                        "priority":
-                            "HIGH",
 
                         "match":
                             market["match"],
 
-                        "arbPercent":
-                            market["arbPercent"]
+                        "cluster":
+                            market["cluster"],
+
+                        "confidence":
+                            market["aiConfidence"]
 
                     }
 
                 )
 
-            if market["steamMove"]:
+            if market["trendReversal"]:
 
                 socketio.emit(
 
-                    "steam_alert",
+                    "reversal_alert",
 
                     {
-
-                        "priority":
-                            "HIGH",
 
                         "match":
                             market["match"],
 
-                        "velocity":
-                            market["marketVelocity"]
+                        "trend":
+                            market["trend"]
 
                     }
 
                 )
 
-            if market["sharpMoney"]:
+            if market["aiConfidence"] >= 75:
 
                 socketio.emit(
 
-                    "sharp_alert",
+                    "ai_signal",
 
                     {
-
-                        "priority":
-                            "MEDIUM",
 
                         "match":
                             market["match"],
 
-                        "arb":
-                            market["arbPercent"]
+                        "confidence":
+                            market["aiConfidence"],
 
-                    }
-
-                )
-
-            if market["marketVelocity"] >= 5:
-
-                socketio.emit(
-
-                    "velocity_alert",
-
-                    {
-
-                        "priority":
-                            "HIGH",
-
-                        "match":
-                            market["match"],
-
-                        "velocity":
-                            market["marketVelocity"]
+                        "cluster":
+                            market["cluster"]
 
                     }
 
@@ -392,10 +442,10 @@ def market_stream_loop():
                 {
 
                     "time":
-                        time.strftime("%H:%M:%S"),
+                        market["time"],
 
                     "message":
-                        f'{market["match"]} {market["heatLevel"]} {market["arbPercent"]}%'
+                        f'{market["match"]} {market["cluster"]} AI {market["aiConfidence"]}%'
 
                 }
 
@@ -423,7 +473,7 @@ if __name__ == "__main__":
 
     threading.Thread(
 
-        target=market_stream_loop,
+        target=intelligence_stream_loop,
 
         daemon=True
 
@@ -431,7 +481,7 @@ if __name__ == "__main__":
 
     print("")
     print("===================================")
-    print(" TRUE REALTIME PUSH ENGINE ")
+    print(" TRUE INTELLIGENCE STREAM ")
     print("===================================")
     print(" WS PORT : 10001")
     print("===================================")
