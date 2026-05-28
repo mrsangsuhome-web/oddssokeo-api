@@ -77,6 +77,16 @@ def init_db():
 
             reversal INTEGER,
 
+            exhaustion INTEGER,
+
+            continuation INTEGER,
+
+            pressure INTEGER,
+
+            divergence TEXT,
+
+            fake_steam INTEGER,
+
             created INTEGER
 
         )
@@ -111,11 +121,16 @@ def save_history(market):
             confidence,
             trend,
             reversal,
+            exhaustion,
+            continuation,
+            pressure,
+            divergence,
+            fake_steam,
             created
 
         )
 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
     """, (
 
@@ -135,6 +150,16 @@ def save_history(market):
         market["lastDirection"],
 
         int(market["trendReversal"]),
+
+        market["exhaustionScore"],
+
+        market["continuationProbability"],
+
+        market["pressureScore"],
+
+        market["divergence"],
+
+        int(market["fakeSteam"]),
 
         int(time.time())
 
@@ -224,7 +249,25 @@ def create_initial_market(
             "BALANCED",
 
         "trendReversal":
-            False
+            False,
+
+        "exhaustionScore":
+            0,
+
+        "fakeSteam":
+            False,
+
+        "continuationProbability":
+            0,
+
+        "divergence":
+            "SYNC",
+
+        "pressureScore":
+            0,
+
+        "aiWarning":
+            "NORMAL"
 
     }
 
@@ -259,6 +302,111 @@ def weighted_move(history):
         ]
 
     return random.choice(choices)
+
+# =========================
+# ADVANCED AI
+# =========================
+
+def calculate_exhaustion(history):
+
+    if len(history) < 8:
+        return 0
+
+    recent = history[-8:]
+
+    movement = max(recent) - min(recent)
+
+    volatility = sum([
+
+        abs(
+            recent[i] -
+            recent[i - 1]
+        )
+
+        for i in range(1, len(recent))
+
+    ])
+
+    exhaustion = min(
+
+        100,
+
+        int(
+            volatility * 120 -
+            movement * 40
+        )
+
+    )
+
+    return max(0, exhaustion)
+
+def detect_fake_steam(
+    velocity,
+    sync,
+    arb
+):
+
+    if (
+        velocity >= 5 and
+        sync == 0 and
+        arb < 2
+    ):
+
+        return True
+
+    return False
+
+def continuation_probability(
+    velocity,
+    sync,
+    confidence
+):
+
+    score = int(
+
+        velocity * 8 +
+
+        sync * 25 +
+
+        confidence * 0.6
+
+    )
+
+    return min(99, score)
+
+def divergence_engine(
+    move_a,
+    move_b
+):
+
+    if move_a > 0 and move_b < 0:
+        return "BOOK_DIVERGENCE"
+
+    if move_a < 0 and move_b > 0:
+        return "BOOK_DIVERGENCE"
+
+    return "SYNC"
+
+def sustained_pressure(
+    history
+):
+
+    if len(history) < 10:
+        return 0
+
+    recent = history[-10:]
+
+    avg = sum(recent) / len(recent)
+
+    pressure = int(
+
+        abs(
+            recent[-1] - avg
+        ) * 120
+
+    )
+
+    return min(99, pressure)
 
 # =========================
 # BUILD MARKET
@@ -388,6 +536,38 @@ def build_market():
 
         )
 
+        exhaustion = calculate_exhaustion(
+            market["movementHistory"]
+        )
+
+        fakeSteam = detect_fake_steam(
+
+            velocity,
+            sync,
+            arb
+
+        )
+
+        continuation = continuation_probability(
+
+            velocity,
+            sync,
+            confidence
+
+        )
+
+        divergence = divergence_engine(
+
+            move_a,
+            move_b
+
+        )
+
+        pressure = sustained_pressure(
+
+            market["movementHistory"]
+        )
+
         replay = market["replayTimeline"]
 
         replay.append({
@@ -405,7 +585,16 @@ def build_market():
                 arb,
 
             "trend":
-                trend
+                trend,
+
+            "exhaustion":
+                exhaustion,
+
+            "continuation":
+                continuation,
+
+            "pressure":
+                pressure
 
         })
 
@@ -456,6 +645,32 @@ def build_market():
             )
         )
 
+        market["exhaustionScore"] = exhaustion
+
+        market["fakeSteam"] = fakeSteam
+
+        market["continuationProbability"] = continuation
+
+        market["divergence"] = divergence
+
+        market["pressureScore"] = pressure
+
+        if exhaustion >= 70:
+
+            market["aiWarning"] = "EXHAUSTION"
+
+        elif fakeSteam:
+
+            market["aiWarning"] = "FAKE_STEAM"
+
+        elif continuation >= 80:
+
+            market["aiWarning"] = "CONTINUATION"
+
+        else:
+
+            market["aiWarning"] = "NORMAL"
+
         market["clock"] = f"{random.randint(1,90)}'"
 
         market["liveStatus"] = "LIVE"
@@ -485,7 +700,7 @@ def home():
             "LIVE",
 
         "engine":
-            "SPORTSBOOK INTELLIGENCE ENGINE",
+            "ADVANCED AI INTELLIGENCE ENGINE",
 
         "database":
             "SQLITE ACTIVE",
@@ -526,6 +741,11 @@ def history():
             confidence,
             trend,
             reversal,
+            exhaustion,
+            continuation,
+            pressure,
+            divergence,
+            fake_steam,
             created
 
         FROM market_history
@@ -576,8 +796,23 @@ def history():
             "reversal":
                 bool(row[9]),
 
+            "exhaustion":
+                row[10],
+
+            "continuation":
+                row[11],
+
+            "pressure":
+                row[12],
+
+            "divergence":
+                row[13],
+
+            "fakeSteam":
+                bool(row[14]),
+
             "created":
-                row[10]
+                row[15]
 
         })
 
@@ -595,7 +830,7 @@ def health():
             "connected",
 
         "engine":
-            "replay intelligence active"
+            "advanced ai active"
 
     })
 
@@ -609,7 +844,7 @@ if __name__ == "__main__":
 
     print("")
     print("===================================")
-    print(" SPORTSBOOK INTELLIGENCE ENGINE ")
+    print(" ADVANCED AI INTELLIGENCE ENGINE ")
     print("===================================")
     print(" API PORT : 10000")
     print(" DATABASE : SQLITE")
