@@ -13,161 +13,159 @@ CORS(app)
 
 DB_NAME = "market_history.db"
 
+import requests
+
+PARLAY_API_KEY = "YOUR_API_KEY"
+
+BASE_URL = "https://parlay-api.com/v1"
+
 BOOKMAKERS = [
-    "PIN",
-    "365",
-    "SBO",
-    "IBC",
-    "CMD",
-    "188",
-    "SABA",
-    "BTI"
-]
 
-MATCHES = [
+```
+"PIN",
+"365",
+"SBO",
+"IBC",
+"188",
 
-    ("PSG vs Arsenal", "UCL"),
-    ("Manchester City vs Aston Villa", "EPL"),
-    ("Liverpool vs Brentford", "EPL"),
-    ("Tottenham vs Everton", "EPL"),
-    ("Napoli vs Udinese", "SA"),
-    ("AC Milan vs Cagliari", "SA"),
-    ("Torino vs Juventus", "SA"),
-    ("Villarreal vs Atletico Madrid", "LAL"),
-    ("Saint-Étienne vs Nice", "L1"),
-    ("Paderborn vs Wolfsburg", "BUN")
+"SABA",
+"CMD",
+"BTI"
+```
 
 ]
 
-MARKET_MEMORY = {}
+def get_active_soccer_sports():
 
-# =========================
-# DATABASE
-# =========================
+```
+headers = {
 
-def init_db():
+    "X-API-Key":
+        PARLAY_API_KEY
 
-    conn = sqlite3.connect(DB_NAME)
+}
 
-    cur = conn.cursor()
+try:
 
-    cur.execute("""
+    response = requests.get(
 
-        CREATE TABLE IF NOT EXISTS market_history (
+        f"{BASE_URL}/sports",
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        headers=headers,
 
-            match_name TEXT,
+        timeout=15
 
-            league TEXT,
+    )
 
-            odd_a REAL,
+    if response.status_code != 200:
 
-            odd_b REAL,
+        return []
 
-            velocity REAL,
+    sports = response.json()
 
-            arb REAL,
+    output = []
 
-            cluster_name TEXT,
+    for sport in sports:
 
-            confidence INTEGER,
+        key = sport.get(
+            "key",
+            ""
+        )
 
-            trend TEXT,
+        if key.startswith(
+            "soccer_"
+        ):
 
-            reversal INTEGER,
+            output.append({
 
-            exhaustion INTEGER,
+                "key":
+                    key,
 
-            continuation INTEGER,
+                "title":
+                    sport.get(
+                        "title",
+                        key
+                    )
 
-            pressure INTEGER,
+            })
 
-            divergence TEXT,
+    return output
 
-            fake_steam INTEGER,
+except Exception as e:
 
-            created INTEGER
+    print(
+        "[SPORT ERROR]",
+        str(e)
+    )
+
+    return []
+```
+
+def fetch_live_matches():
+
+```
+headers = {
+
+    "X-API-Key":
+        PARLAY_API_KEY
+
+}
+
+all_matches = []
+
+sports = get_active_soccer_sports()
+
+for sport in sports:
+
+    try:
+
+        url = (
+            f"{BASE_URL}"
+            f"/sports/"
+            f"{sport['key']}"
+            f"/live/points"
+        )
+
+        response = requests.get(
+
+            url,
+
+            headers=headers,
+
+            timeout=10
 
         )
 
-    """)
+        if response.status_code == 200:
 
-    conn.commit()
+            data = response.json()
 
-    conn.close()
+            if isinstance(
+                data,
+                list
+            ):
 
-# =========================
-# SAVE HISTORY
-# =========================
+                for item in data:
 
-def save_history(market):
+                    item["_league"] = (
+                        sport["title"]
+                    )
 
-    conn = sqlite3.connect(DB_NAME)
+                    all_matches.append(
+                        item
+                    )
 
-    cur = conn.cursor()
+    except Exception as e:
 
-    cur.execute("""
-
-        INSERT INTO market_history (
-
-            match_name,
-            league,
-            odd_a,
-            odd_b,
-            velocity,
-            arb,
-            cluster_name,
-            confidence,
-            trend,
-            reversal,
-            exhaustion,
-            continuation,
-            pressure,
-            divergence,
-            fake_steam,
-            created
-
+        print(
+            "[LIVE ERROR]",
+            sport["key"],
+            str(e)
         )
 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+return all_matches
 
-    """, (
 
-        market["match"],
-        market["league"],
-
-        market["awayOddA"],
-        market["awayOddB"],
-
-        market["marketVelocity"],
-        market["arbPercent"],
-
-        market["cluster"],
-
-        market["aiConfidence"],
-
-        market["lastDirection"],
-
-        int(market["trendReversal"]),
-
-        market["exhaustionScore"],
-
-        market["continuationProbability"],
-
-        market["pressureScore"],
-
-        market["divergence"],
-
-        int(market["fakeSteam"]),
-
-        int(time.time())
-
-    ))
-
-    conn.commit()
-
-    conn.close()
 
 # =========================
 # INITIAL MARKET
@@ -413,6 +411,104 @@ def sustained_pressure(
 # =========================
 
 def build_market():
+def build_market():
+
+```
+matches = fetch_live_matches()
+
+output = []
+
+for item in matches:
+
+    try:
+
+        home = item.get(
+            "home_team",
+            ""
+        )
+
+        away = item.get(
+            "away_team",
+            ""
+        )
+
+        minute = item.get(
+            "minute",
+            0
+        )
+
+        odd_a = round(
+            random.uniform(
+                0.88,
+                1.02
+            ),
+            2
+        )
+
+        odd_b = round(
+            random.uniform(
+                0.88,
+                1.02
+            ),
+            2
+        )
+
+        output.append({
+
+            "match":
+                f"{home} vs {away}",
+
+            "league":
+                item.get(
+                    "_league",
+                    "SOCCER"
+                ),
+
+            "bookA":
+                random.choice(
+                    BOOKMAKERS
+                ),
+
+            "bookB":
+                random.choice(
+                    BOOKMAKERS
+                ),
+
+            "awayOddA":
+                odd_a,
+
+            "awayOddB":
+                odd_b,
+
+            "clock":
+                f"{minute}'",
+
+            "liveStatus":
+                "LIVE",
+
+            "homeScore":
+                item.get(
+                    "home_score",
+                    0
+                ),
+
+            "awayScore":
+                item.get(
+                    "away_score",
+                    0
+                )
+
+        })
+
+    except Exception as e:
+
+        print(
+            "[MAP ERROR]",
+            str(e)
+        )
+
+return output
+```
 
     global MARKET_MEMORY
 
