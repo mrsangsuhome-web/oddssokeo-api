@@ -1,7 +1,8 @@
+
 flask
 flask-cors
+flask-socketio
 requests
 gunicorn
 python-dotenv
-flask-socketio 
-eventlet
+

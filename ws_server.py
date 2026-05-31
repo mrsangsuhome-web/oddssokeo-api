@@ -248,12 +248,21 @@ if __name__ == "__main__":
     print("===================================")
     print("")
 
-    socketio.run(
+import os
+
+socketio.run(
     app,
     host="0.0.0.0",
-    port=10001,
-    debug=True,
+    port=int(
+        os.environ.get(
+            "PORT",
+            10001
+        )
+    ),
+    debug=False,
     allow_unsafe_werkzeug=True
+
+
 
 
     )
