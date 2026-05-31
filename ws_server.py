@@ -9,14 +9,29 @@ import time
 
 app = Flask(__name__)
 
-CORS(app)
+
+CORS(
+    app,
+    resources={
+        r"/*": {
+            "origins": "*"
+        }
+    }
+)
+
+
+
 
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",
+    cors_allowed_origins=[
+        "https://oddssokeo-scanner.vercel.app",
+        "http://localhost:3000"
+    ],
     async_mode="threading",
-    ping_timeout=30,
-    ping_interval=15
+    logger=True,
+    engineio_logger=True
+
 )
 
 CLIENTS = 0
