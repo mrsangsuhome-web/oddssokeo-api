@@ -4,8 +4,8 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 
 import requests
-import time
 import threading
+import time
 
 app = Flask(__name__)
 
@@ -14,15 +14,47 @@ CORS(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode="threading",
-    ping_timeout=20,
-    ping_interval=10
+    async_mode="eventlet",
+    ping_timeout=30,
+    ping_interval=15
 )
 
 CLIENTS = 0
 
-API_URL = "https://oddssokeo-api-1.onrender.com/matches"
+API_URL = (
+    "https://oddssokeo-api-1.onrender.com/matches"
+)
 
+
+def get_live_markets():
+
+    try:
+
+        response = requests.get(
+            API_URL,
+            timeout=15
+        )
+
+        if response.status_code == 200:
+
+            data = response.json()
+
+            if isinstance(
+                data,
+                list
+            ):
+                return data
+
+        return []
+
+    except Exception as e:
+
+        print(
+            "[API ERROR]",
+            str(e)
+        )
+
+        return []
 
 def get_live_markets():
 
@@ -132,36 +164,42 @@ def intelligence_stream_loop():
 
     while True:
 
-        markets = get_live_markets()
+        try:
 
-        socketio.emit(
-            "market_batch",
-            markets
-        )
-
-        for market in markets:
+            markets = get_live_markets()
 
             socketio.emit(
-                "intelligence_stream",
-                market
+                "market_batch",
+                markets
             )
 
             socketio.emit(
-
-                "console",
-
+                "source_status",
                 {
-
-                    "time":
-                        time.strftime("%H:%M:%S"),
-
-                    "message":
-                        f'{market.get("match","")} '
-                        f'{market.get("cluster","")}'
-
+                    "status": "ONLINE",
+                    "markets": len(markets),
+                    "clients": CLIENTS,
+                    "time": time.strftime("%H:%M:%S")
                 }
-
             )
+
+            socketio.emit(
+                "console",
+                {
+                    "time": time.strftime("%H:%M:%S"),
+                    "message":
+                        f"Markets: {len(markets)}"
+                }
+            )
+
+        except Exception as e:
+
+            print(
+                "[WS ERROR]",
+                str(e)
+            )
+
+        time.sleep(2)
 
         socketio.emit(
 
