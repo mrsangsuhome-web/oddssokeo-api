@@ -14,7 +14,7 @@ CORS(app)
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode="eventlet",
+    async_mode="threading",
     ping_timeout=30,
     ping_interval=15
 )
@@ -249,16 +249,12 @@ if __name__ == "__main__":
     print("")
 
     socketio.run(
+    app,
+    host="0.0.0.0",
+    port=10001,
+    debug=True,
+    allow_unsafe_werkzeug=True
 
-        app,
-
-        host="0.0.0.0",
-
-        port=10001,
-
-        debug=True,
-
-        allow_unsafe_werkzeug=True
 
     )
 
