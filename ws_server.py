@@ -22,15 +22,15 @@ CORS(
 
 
 
+
 socketio = SocketIO(
     app,
-    cors_allowed_origins=[
-        "https://oddssokeo-scanner.vercel.app",
-        "http://localhost:3000"
-    ],
+    cors_allowed_origins="*",
     async_mode="threading",
     logger=True,
     engineio_logger=True
+
+
 
 )
 
@@ -240,19 +240,13 @@ def intelligence_stream_loop():
 if __name__ == "__main__":
 
     threading.Thread(
-
         target=heartbeat_loop,
-
         daemon=True
-
     ).start()
 
     threading.Thread(
-
         target=intelligence_stream_loop,
-
         daemon=True
-
     ).start()
 
     print("")
@@ -263,23 +257,17 @@ if __name__ == "__main__":
     print("===================================")
     print("")
 
-import os
+    import os
 
-socketio.run(
-    app,
-    host="0.0.0.0",
-    port=int(
-        os.environ.get(
-            "PORT",
-            10001
-        )
-    ),
-    debug=False,
-    allow_unsafe_werkzeug=True
-
-
-
-
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=int(
+            os.environ.get(
+                "PORT",
+                10001
+            )
+        ),
+        debug=False,
+        allow_unsafe_werkzeug=True
     )
-
-

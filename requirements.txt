@@ -5,4 +5,9 @@ flask-socketio
 requests
 gunicorn
 python-dotenv
+gevent
+gevent-websocket
+gunicorn
+
+
 
