@@ -81,8 +81,8 @@ LEAGUE_MAP = {
 
 
 }
-  
-  def fetch_odds():
+
+def fetch_odds():
 
       global cached_matches
 
