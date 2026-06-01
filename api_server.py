@@ -86,12 +86,10 @@ def fetch_odds():
 
       global cached_matches
 
-      results = []
+results = []
 
-      headers = {
-
+headers = {
     "X-API-Key": API_KEY
-
 }
 
 try:
@@ -104,13 +102,9 @@ try:
         )
 
         response = requests.get(
-
             url,
-
             headers=headers,
-
             timeout=20
-
         )
 
         if response.status_code != 200:
@@ -199,7 +193,10 @@ try:
 
 except Exception as e:
 
-    print("API ERROR:", e)
+    print(
+        "API ERROR:",
+        e
+    )
 
     if os.path.exists(
         CACHE_FILE
@@ -211,16 +208,20 @@ except Exception as e:
         ) as f:
 
             cached_matches = json.load(f)
-            @app.route("/")
+
+@app.route("/")
 def home():
 
 return jsonify({
 
-    "status": "running",
+    "status":
+        "running",
 
-    "matches": len(cached_matches),
+    "matches":
+        len(cached_matches),
 
-    "source": "PARLAY API"
+    "source":
+        "PARLAY API"
 
 })
 
@@ -246,25 +247,16 @@ while True:
 
     time.sleep(15)
 
-if **name** == "**main**":
+if name == "main":
 
 fetch_odds()
 
 Thread(
-
     target=background_loop,
-
     daemon=True
-
 ).start()
 
 app.run(
-
     host="0.0.0.0",
-
     port=10000
-
 )
-
-
-
