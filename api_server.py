@@ -81,13 +81,14 @@ LEAGUE_MAP = {
 
 
 }
-def fetch_odds():
+  
+  def fetch_odds():
 
-global cached_matches
+      global cached_matches
 
-results = []
+      results = []
 
-headers = {
+      headers = {
 
     "X-API-Key": API_KEY
 
