@@ -84,7 +84,8 @@ LEAGUE_MAP = {
 
 def fetch_odds():
 
-      global cached_matches
+      
+    global cached_matches
 
 results = []
 
@@ -129,35 +130,26 @@ try:
 
             results.append({
 
-                "match":
-                    f"{home} vs {away}",
+                "match": f"{home} vs {away}",
 
-                "league":
-                    LEAGUE_MAP.get(
-                        sport.upper(),
-                        sport.upper()
-                    ),
+                "league": LEAGUE_MAP.get(
+                    sport.upper(),
+                    sport.upper()
+                ),
 
-                "bookA":
-                    BOOKMAKERS[0],
+                "bookA": BOOKMAKERS[0],
 
-                "bookB":
-                    BOOKMAKERS[1],
+                "bookB": BOOKMAKERS[1],
 
-                "awayOddA":
-                    0.95,
+                "awayOddA": 0.95,
 
-                "awayOddB":
-                    0.97,
+                "awayOddB": 0.97,
 
-                "gap":
-                    0.02,
+                "gap": 0.02,
 
-                "liveStatus":
-                    "LIVE",
+                "liveStatus": "LIVE",
 
-                "timestamp":
-                    int(time.time())
+                "timestamp": int(time.time())
 
             })
 
@@ -208,48 +200,36 @@ except Exception as e:
         ) as f:
 
             cached_matches = json.load(f)
-
 @app.route("/")
 def home():
+    return jsonify({
 
-return jsonify({
+    "status": "running",
 
-    "status":
-        "running",
+    "matches": len(cached_matches),
 
-    "matches":
-        len(cached_matches),
-
-    "source":
-        "PARLAY API"
+    "source": "PARLAY API"
 
 })
-
 @app.route("/matches")
 def matches():
-
-return jsonify(
+    return jsonify(
     cached_matches
 )
-
 @app.route("/console")
 def console():
-
-return jsonify(
+    return jsonify(
     console_logs
 )
-
 def background_loop():
-
-while True:
+    while True:
 
     fetch_odds()
 
     time.sleep(15)
-
-if name == "main":
-
-fetch_odds()
+    
+    if name == "main":
+        fetch_odds()
 
 Thread(
     target=background_loop,
