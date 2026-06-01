@@ -83,9 +83,7 @@ LEAGUE_MAP = {
 }
 
 def fetch_odds():
-
-      
-    global cached_matches
+global cached_matches
 
 results = []
 
@@ -166,33 +164,20 @@ try:
         )
 
     console_logs.insert(
-
         0,
-
         {
-
-            "time":
-                time.strftime("%H:%M:%S"),
-
-            "message":
-                f"UPDATED {len(cached_matches)} MATCHES"
-
+            "time": time.strftime("%H:%M:%S"),
+            "message": f"UPDATED {len(cached_matches)} MATCHES"
         }
-
     )
 
     console_logs[:] = console_logs[:50]
 
 except Exception as e:
 
-    print(
-        "API ERROR:",
-        e
-    )
+    print("API ERROR:", e)
 
-    if os.path.exists(
-        CACHE_FILE
-    ):
+    if os.path.exists(CACHE_FILE):
 
         with open(
             CACHE_FILE,
@@ -200,9 +185,8 @@ except Exception as e:
         ) as f:
 
             cached_matches = json.load(f)
-@app.route("/")
-def home():
-    return jsonify({
+@app.route(“/”) def home():
+return jsonify({
 
     "status": "running",
 
@@ -211,25 +195,22 @@ def home():
     "source": "PARLAY API"
 
 })
-@app.route("/matches")
-def matches():
-    return jsonify(
+@app.route(“/matches”) def matches():
+return jsonify(
     cached_matches
 )
-@app.route("/console")
-def console():
-    return jsonify(
+@app.route(“/console”) def console():
+return jsonify(
     console_logs
 )
 def background_loop():
-    while True:
+while True:
 
     fetch_odds()
 
     time.sleep(15)
-    
-    if name == "main":
-        fetch_odds()
+if name == “main”:
+fetch_odds()
 
 Thread(
     target=background_loop,
